@@ -1,0 +1,49 @@
+# Fly.io deployment for trout. See "Deploying to Fly.io" in README.md.
+#
+# Pick your own app name: it becomes https://<app>.fly.dev
+app = "trout-relay"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+# The access key is NOT set here. Set it once with:
+#   fly secrets set TROUT_ACCESS_KEY=$(openssl rand -hex 32)
+[env]
+  TROUT_CONFIG = "/etc/trout/trout.toml"
+  TROUT_LISTEN = "0.0.0.0:8080"
+  TROUT_STORE_PATH = "/data/trout.db"
+
+# Conversation store. Create the volume once before the first deploy:
+#   fly volumes create trout_data --region fra --size 1
+[mounts]
+  source = "trout_data"
+  destination = "/data"
+
+# Fly terminates TLS and forwards plain HTTP to the relay.
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Stop the machine when nobody is connected and start it on the next
+  # request (about a second of delay). Stored conversations stay on the
+  # volume. For an always-on relay set auto_stop_machines = "off" and
+  # min_machines_running = 1.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+    hard_limit = 40
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "30s"
+    timeout = "3s"
+    grace_period = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

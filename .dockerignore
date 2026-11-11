@@ -1,0 +1,9 @@
+target/
+.git/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+tests/
+README.md

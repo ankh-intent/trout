@@ -1,0 +1,36 @@
+[Unit]
+Description=trout - OpenAI-compatible LLM relay
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=trout
+Group=trout
+ExecStart=/usr/local/bin/trout
+Environment=TROUT_CONFIG=/etc/trout/trout.toml
+# Holds TROUT_ACCESS_KEY=... ; must be readable by root only (chmod 600).
+EnvironmentFile=/etc/trout/trout.env
+# Creates /var/lib/trout, owned by the service user, for the conversation store.
+StateDirectory=trout
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=2
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+# trout configuration baked into the Fly.io image (/etc/trout/trout.toml).
+# Sized for a shared-cpu-1x machine with 256 MB of memory and a 1 GB volume.
+#
+# listen, store.path and the access key come from the environment
+# (fly.toml [env] and `fly secrets`), which overrides this file.
+
+[targets]
+# Any public https provider is allowed once the access key is valid.
+# Switch to "listed" and add [[targets.list]] entries to restrict it.
+mode = "any-public"
+
+[limits]
+max_body_bytes = 8388608             # 8 MiB as received
+max_decoded_body_bytes = 16777216    # 16 MiB after decompression; bounds memory per request
+connect_timeout_secs = 10
+first_byte_timeout_secs = 300        # slow, non-streamed completions can take minutes
+stream_idle_timeout_secs = 300
+
+[store]
+ttl_secs = 86400
+max_bytes = 536870912                # 512 MiB: leaves room on the 1 GB volume for SQLite's own files
+sweep_interval_secs = 60
+
+[log]
+format = "json"
+level = "info"

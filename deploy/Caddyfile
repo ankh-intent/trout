@@ -1,0 +1,9 @@
+# Replace the host name with the DNS name that points at this server.
+# Caddy obtains and renews the certificate on its own.
+trout.example.com {
+	# trout does its own gzip (with a flush per streamed event); do not add `encode` here.
+	reverse_proxy 127.0.0.1:8787 {
+		# Pass every chunk on immediately so streamed answers are not held back.
+		flush_interval -1
+	}
+}

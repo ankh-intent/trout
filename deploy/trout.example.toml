@@ -1,0 +1,39 @@
+# trout configuration. Copy to /etc/trout/trout.toml.
+# Every key is optional except the access key; the values shown are the defaults.
+# Changes take effect on restart.
+
+# Address to listen on. Keep it on loopback and put a TLS front (see Caddyfile) before it.
+listen = "127.0.0.1:8787"
+
+# Secret every client must send in the X-Trout-Key header. At least 32 characters.
+# Prefer setting TROUT_ACCESS_KEY in /etc/trout/trout.env over writing it here.
+# access_key = ""
+
+[targets]
+# "any-public": any https provider is allowed once the access key is valid.
+# "listed":     only the providers under [[targets.list]].
+mode = "any-public"
+
+# Optional per-provider settings. base_url is what clients send in X-Trout-Target.
+# [[targets.list]]
+# base_url = "https://api.example.com/v1"
+# accepts_gzip = false     # true: send gzip request bodies to this provider
+# allow_private = false    # true: allow a host that resolves to a non-public address
+#                          #       (also required for plain http)
+
+[limits]
+max_body_bytes = 16777216            # request body as received
+max_decoded_body_bytes = 67108864    # request body after decompression
+connect_timeout_secs = 10
+first_byte_timeout_secs = 120        # wait for the provider to start answering
+stream_idle_timeout_secs = 300       # longest silence inside a streamed answer
+
+[store]
+path = "/var/lib/trout/trout.db"
+ttl_secs = 86400                     # unused conversations are removed after this long (min 60)
+max_bytes = 1073741824               # least recently used conversations are evicted above this
+sweep_interval_secs = 60             # 1 to 300
+
+[log]
+format = "json"                      # "json" or "text"
+level = "info"                       # trace, debug, info, warn, error
