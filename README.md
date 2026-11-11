@@ -118,9 +118,12 @@ It holds no data itself; it reads `/stats` with the key you type, which is kept 
 tab's session storage. Figures are counts and sizes only, never content.
 
 Statistics are kept in the store file, so they survive restarts. Byte figures count only requests that
-reached a provider; requests the relay rejected are counted as failures and nothing else. The page does
-not refresh on its own (on Fly.io an open tab that polled would keep the machine from stopping); use
-the Refresh button.
+reached a provider; requests the relay rejected are counted as failures and nothing else.
+
+The page polls `/stats` while its tab is visible: every 5 seconds at first, doubling the wait each time
+the figures have not changed, up to 5 minutes. A change in the figures, the Refresh button, or the
+window or tab regaining focus starts it again at 5 seconds. A hidden tab does not poll, so on Fly.io a
+forgotten background tab does not keep the machine awake; a visible one does wake it on each check.
 
 ### Errors
 

@@ -132,7 +132,18 @@
 'use strict';
 
 const KEY_STORAGE = 'trout-key';
+// Polling starts fast, doubles its wait each time nothing changed, and starts over when the
+// figures change or the tab regains focus. A hidden tab does not poll at all.
+const POLL_MIN_MS = 5000;
+const POLL_MAX_MS = 300000;
 const $ = (id) => document.getElementById(id);
+
+let pollDelay = POLL_MIN_MS;
+let pollTimer = null;
+let loading = false;
+let restartRequested = false;
+let lastSnapshot = null;
+let lastStats = null;
 
 const formatBytes = (bytes) => {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -241,11 +252,21 @@ const renderDays = (days) => {
   }
 };
 
+const renderMeta = () => {
+  if (!lastStats) {
+    $('meta').textContent = '';
+
+    return;
+  }
+
+  const checking = document.hidden ? 'paused' : `checking every ${formatDuration(Math.round(pollDelay / 1000))}`;
+
+  $('meta').textContent = `v${lastStats.version} · up ${formatDuration(lastStats.uptime_secs)} · updated ${new Date(lastStats.generated_at_ms).toLocaleTimeString()} · ${checking}`;
+};
+
 const render = (stats) => {
   const totals = stats.totals;
   const store = stats.store;
-
-  $('meta').textContent = `v${stats.version} · up ${formatDuration(stats.uptime_secs)} · updated ${new Date(stats.generated_at_ms).toLocaleTimeString()}`;
 
   $('up-saved').textContent = formatBytes(totals.upload_saved_bytes);
   $('up-note').textContent = `${percent(totals.upload_saved_bytes, totals.provider_up_bytes)} of ${formatBytes(totals.provider_up_bytes)}; sent ${formatBytes(totals.client_up_bytes)}`;
@@ -274,10 +295,46 @@ const show = (signedIn) => {
   $('logout').hidden = !signedIn;
 };
 
-const load = async () => {
-  const key = sessionStorage.getItem(KEY_STORAGE);
+const stopPolling = () => {
+  clearTimeout(pollTimer);
+  pollTimer = null;
+};
 
-  $('error').textContent = '';
+const schedulePoll = () => {
+  stopPolling();
+
+  if (document.hidden || !sessionStorage.getItem(KEY_STORAGE)) {
+    return;
+  }
+
+  pollTimer = setTimeout(() => {
+    load();
+  }, pollDelay);
+};
+
+const backOff = () => {
+  pollDelay = Math.min(pollDelay * 2, POLL_MAX_MS);
+};
+
+const resetBackoff = () => {
+  pollDelay = POLL_MIN_MS;
+};
+
+const signOut = (message) => {
+  sessionStorage.removeItem(KEY_STORAGE);
+  stopPolling();
+  resetBackoff();
+  lastSnapshot = null;
+  lastStats = null;
+  renderMeta();
+  show(false);
+  $('error').textContent = message;
+};
+
+// `restart` is set when the check was asked for (focus, Refresh): the wait then starts over at
+// the minimum even if this check finds nothing new.
+const load = async (restart = false) => {
+  const key = sessionStorage.getItem(KEY_STORAGE);
 
   if (!key) {
     show(false);
@@ -285,13 +342,21 @@ const load = async () => {
     return;
   }
 
+  // Remembered even if a check is already running, so a focus that lands mid-check still counts.
+  restartRequested = restartRequested || restart;
+
+  if (loading) {
+    return;
+  }
+
+  loading = true;
+  stopPolling();
+
   try {
     const response = await fetch('/stats', { headers: { 'X-Trout-Key': key }, cache: 'no-store' });
 
     if (response.status === 401) {
-      sessionStorage.removeItem(KEY_STORAGE);
-      show(false);
-      $('error').textContent = 'That key was not accepted.';
+      signOut('That key was not accepted.');
 
       return;
     }
@@ -300,11 +365,41 @@ const load = async () => {
       throw new Error(`HTTP ${response.status}`);
     }
 
-    render(await response.json());
+    const stats = await response.json();
+    // Only the figures count as a change; the timestamp and uptime differ on every answer.
+    const snapshot = JSON.stringify([stats.totals, stats.days, stats.store]);
+
+    if (snapshot !== lastSnapshot) {
+      resetBackoff();
+      render(stats);
+    } else if (restartRequested) {
+      resetBackoff();
+    } else {
+      backOff();
+    }
+
+    lastSnapshot = snapshot;
+    lastStats = stats;
+    $('error').textContent = '';
     show(true);
   } catch (error) {
+    if (restartRequested) {
+      resetBackoff();
+    } else {
+      backOff();
+    }
+
     $('error').textContent = `Could not load statistics: ${error.message}`;
+  } finally {
+    loading = false;
+    restartRequested = false;
+    renderMeta();
+    schedulePoll();
   }
+};
+
+const refreshNow = () => {
+  load(true);
 };
 
 $('login').addEventListener('submit', (event) => {
@@ -319,13 +414,21 @@ $('login').addEventListener('submit', (event) => {
   }
 });
 
-$('refresh').addEventListener('click', () => {
-  load();
-});
+$('refresh').addEventListener('click', refreshNow);
 
 $('logout').addEventListener('click', () => {
-  sessionStorage.removeItem(KEY_STORAGE);
-  show(false);
+  signOut('');
+});
+
+window.addEventListener('focus', refreshNow);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopPolling();
+    renderMeta();
+  } else {
+    refreshNow();
+  }
 });
 
 load();

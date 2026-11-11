@@ -63,6 +63,17 @@ async fn page_is_public_static_and_self_contained() {
     assert!(page.starts_with("<!doctype html>"));
     assert!(page.contains("/stats"));
 
+    // Polls with backoff, starts over on focus, and stays quiet while hidden.
+    for expected in [
+        "POLL_MIN_MS",
+        "POLL_MAX_MS",
+        "addEventListener('focus'",
+        "visibilitychange",
+        "document.hidden",
+    ] {
+        assert!(page.contains(expected), "page should contain `{expected}`");
+    }
+
     for forbidden in [
         "http://",
         "https://",
