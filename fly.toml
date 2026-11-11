@@ -1,7 +1,7 @@
 # Fly.io deployment for trout. See "Deploying to Fly.io" in README.md.
 #
 # Pick your own app name: it becomes https://<app>.fly.dev
-app = "trout-relay"
+app = "trout"
 primary_region = "fra"
 
 [build]
@@ -14,11 +14,14 @@ primary_region = "fra"
   TROUT_LISTEN = "0.0.0.0:8080"
   TROUT_STORE_PATH = "/data/trout.db"
 
-# Conversation store. Create the volume once before the first deploy:
+# Conversation store. A first deploy creates the volume if it does not
+# exist; to create it by hand:
 #   fly volumes create trout_data --region fra --size 1
 [mounts]
   source = "trout_data"
   destination = "/data"
+  # Size of the volume when a deploy has to create it.
+  initial_size = "1gb"
 
 # Fly terminates TLS and forwards plain HTTP to the relay.
 [http_service]
