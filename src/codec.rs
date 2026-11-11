@@ -128,6 +128,21 @@ impl GzipChunkEncoder {
     }
 }
 
+/// Adds the size of every chunk that passes through to `counter`.
+pub fn counted<S>(
+    inner: S,
+    counter: std::sync::Arc<std::sync::atomic::AtomicU64>,
+) -> impl Stream<Item = Result<Bytes, RelayError>> + Send + 'static
+where
+    S: Stream<Item = Result<Bytes, RelayError>> + Send + 'static,
+{
+    inner.inspect(move |item| {
+        if let Ok(chunk) = item {
+            counter.fetch_add(chunk.len() as u64, std::sync::atomic::Ordering::Relaxed);
+        }
+    })
+}
+
 /// Gzip-encodes a byte stream chunk by chunk. An error from the inner stream ends the output.
 pub fn gzip_stream<S>(inner: S) -> impl Stream<Item = Result<Bytes, RelayError>> + Send + 'static
 where

@@ -32,3 +32,17 @@ CREATE TABLE IF NOT EXISTS responses (
 
 CREATE INDEX IF NOT EXISTS responses_conversation_id ON responses (conversation_id);
 CREATE INDEX IF NOT EXISTS responses_parent_id ON responses (parent_id);
+
+-- Traffic statistics, one row per UTC day. Not counted against the store's size cap and never
+-- swept: it is a few dozen bytes a day.
+CREATE TABLE IF NOT EXISTS stats_daily (
+    day                   TEXT PRIMARY KEY,
+    proxy_requests        INTEGER NOT NULL DEFAULT 0,
+    response_turns        INTEGER NOT NULL DEFAULT 0,
+    conversations_started INTEGER NOT NULL DEFAULT 0,
+    failed_requests       INTEGER NOT NULL DEFAULT 0,
+    client_up_bytes       INTEGER NOT NULL DEFAULT 0,
+    provider_up_bytes     INTEGER NOT NULL DEFAULT 0,
+    client_down_bytes     INTEGER NOT NULL DEFAULT 0,
+    plain_down_bytes      INTEGER NOT NULL DEFAULT 0
+);

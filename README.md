@@ -100,6 +100,27 @@ Other routes:
 | `DELETE /v1/responses/{id}` | Removes the answer and everything continued from it. |
 | `DELETE /v1/conversations/{id}` | Removes the whole conversation (`conversation.id` is on every answer). |
 | `GET /healthz` | `{"status":"ok"}`, no key needed. |
+| `GET /dashboard` | Statistics page (see below). The page itself needs no key. |
+| `GET /stats` | The figures behind the page, as JSON. Needs the key. |
+
+### Dashboard
+
+Open `https://<your-relay>/dashboard` in a browser and enter the access key. It shows:
+
+- **Upload saved** and **download saved**: what the provider received against what the client actually
+  sent, and the answer size before compression against what the client actually received.
+- **Conversations served**, turns, proxied requests and failures.
+- **Stored now**: conversations and bytes in the store, against its size cap.
+- A per-day upload chart and table for the last 30 days that saw traffic (UTC days).
+
+The page is one self-contained file: plain HTML, CSS and JavaScript, nothing loaded from anywhere else.
+It holds no data itself; it reads `/stats` with the key you type, which is kept only in that browser
+tab's session storage. Figures are counts and sizes only, never content.
+
+Statistics are kept in the store file, so they survive restarts. Byte figures count only requests that
+reached a provider; requests the relay rejected are counted as failures and nothing else. The page does
+not refresh on its own (on Fly.io an open tab that polled would keep the machine from stopping); use
+the Refresh button.
 
 ### Errors
 
