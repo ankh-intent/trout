@@ -1,19 +1,23 @@
 use std::pin::Pin;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::task::{Context, Poll};
 use std::time::Instant;
 
 use axum::body::Body;
-use axum::extract::Request;
+use axum::extract::{Request, State};
 use axum::http::{HeaderValue, Method};
 use axum::middleware::Next;
 use axum::response::Response;
 use bytes::Bytes;
 use futures_util::{Stream, TryStreamExt};
+use tokio::sync::mpsc;
 use uuid::Uuid;
 
+use crate::AppState;
 use crate::error::{SOURCE_HEADER, SOURCE_RELAY};
+use crate::store::Store;
+use crate::store::stats::Traffic;
 
 pub const REQUEST_ID_HEADER: &str = "x-trout-request-id";
 
@@ -26,6 +30,49 @@ pub struct TargetHost(pub String);
 pub struct Counters {
     pub wire_in: Arc<AtomicU64>,
     pub decoded_in: Arc<AtomicU64>,
+    /// Bytes of the body sent on to the provider, uncompressed: what the client would have had to
+    /// upload without the relay.
+    pub upstream_sent: Arc<AtomicU64>,
+    /// Set once the request has been passed on to a provider.
+    pub forwarded: Arc<AtomicBool>,
+    /// Answer bytes before compression. Stays zero when the answer is not compressed.
+    pub plain_out: Arc<AtomicU64>,
+}
+
+impl Counters {
+    pub fn mark_forwarded(&self, upstream_body_bytes: usize) {
+        self.upstream_sent
+            .store(upstream_body_bytes as u64, Ordering::Relaxed);
+        self.forwarded.store(true, Ordering::Relaxed);
+    }
+}
+
+/// Hands per-request traffic figures to a background task that adds them to the store, so the
+/// request path never waits on the database.
+#[derive(Clone)]
+pub struct TrafficRecorder {
+    tx: mpsc::UnboundedSender<Traffic>,
+}
+
+impl TrafficRecorder {
+    /// Must be called inside a Tokio runtime. The task ends when every recorder is dropped.
+    pub fn spawn(store: Store) -> Self {
+        let (tx, mut rx) = mpsc::unbounded_channel::<Traffic>();
+
+        tokio::spawn(async move {
+            while let Some(traffic) = rx.recv().await {
+                if store.record_traffic(traffic).await.is_err() {
+                    tracing::warn!(target: "trout::store", "recording traffic failed");
+                }
+            }
+        });
+
+        Self { tx }
+    }
+
+    fn record(&self, traffic: Traffic) {
+        let _ = self.tx.send(traffic);
+    }
 }
 
 fn route_kind(path: &str) -> &'static str {
@@ -40,10 +87,11 @@ fn route_kind(path: &str) -> &'static str {
 
 /// Outermost layer: assigns the request id, counts wire bytes both ways and writes exactly one
 /// log line per request. Headers and bodies are never recorded.
-pub async fn record(mut request: Request, next: Next) -> Response {
+pub async fn record(State(state): State<Arc<AppState>>, mut request: Request, next: Next) -> Response {
     let request_id = Uuid::new_v4().simple().to_string();
     let method = request.method().clone();
     let route = route_kind(request.uri().path());
+    let is_turn = method == Method::POST && request.uri().path() == "/v1/responses";
     let started = Instant::now();
     let counters = Counters::default();
 
@@ -78,6 +126,8 @@ pub async fn record(mut request: Request, next: Next) -> Response {
         ttfb_ms: None,
         counters,
         bytes_out: 0,
+        is_turn,
+        recorder: state.traffic.clone(),
     };
     let (parts, body) = response.into_parts();
     let logged = Logged {
@@ -99,6 +149,46 @@ struct LogEntry {
     ttfb_ms: Option<u64>,
     counters: Counters,
     bytes_out: u64,
+    is_turn: bool,
+    recorder: TrafficRecorder,
+}
+
+impl LogEntry {
+    /// What this request adds to the traffic statistics. Byte figures count only for requests
+    /// that reached a provider, so rejected requests cannot distort the saving.
+    fn traffic(&self) -> Option<Traffic> {
+        if self.route == "admin" {
+            return None;
+        }
+
+        let forwarded = self.counters.forwarded.load(Ordering::Relaxed);
+        let failed = self.status >= 400;
+        let plain_out = self.counters.plain_out.load(Ordering::Relaxed);
+        let traffic = Traffic {
+            proxy_requests: u64::from(self.route == "proxy" && forwarded),
+            response_turns: u64::from(self.is_turn && !failed),
+            conversations_started: 0,
+            failed_requests: u64::from(failed),
+            client_up_bytes: if forwarded {
+                self.counters.wire_in.load(Ordering::Relaxed)
+            } else {
+                0
+            },
+            provider_up_bytes: if forwarded {
+                self.counters.upstream_sent.load(Ordering::Relaxed)
+            } else {
+                0
+            },
+            client_down_bytes: if forwarded { self.bytes_out } else { 0 },
+            plain_down_bytes: if forwarded {
+                plain_out.max(self.bytes_out)
+            } else {
+                0
+            },
+        };
+
+        (traffic != Traffic::default()).then_some(traffic)
+    }
 }
 
 struct Logged {
@@ -127,6 +217,10 @@ impl Stream for Logged {
 impl Drop for Logged {
     fn drop(&mut self) {
         let e = &self.entry;
+
+        if let Some(traffic) = e.traffic() {
+            e.recorder.record(traffic);
+        }
 
         tracing::info!(
             target: "trout::request",

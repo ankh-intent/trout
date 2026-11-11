@@ -10,9 +10,12 @@ use crate::error::RelayError;
 
 pub const KEY_HEADER: &str = "x-trout-key";
 pub const HEALTH_PATH: &str = "/healthz";
+/// The dashboard page is static and holds no data; the figures it shows come from `/stats`,
+/// which needs the key like everything else.
+pub const DASHBOARD_PATH: &str = "/dashboard";
 
 pub async fn require_key(State(state): State<Arc<AppState>>, request: Request, next: Next) -> Response {
-    if request.uri().path() == HEALTH_PATH {
+    if matches!(request.uri().path(), HEALTH_PATH | DASHBOARD_PATH) {
         return next.run(request).await;
     }
 

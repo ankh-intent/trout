@@ -1,3 +1,4 @@
+pub mod stats;
 pub mod sweeper;
 
 use std::collections::HashSet;
@@ -347,6 +348,14 @@ fn begin(conn: &mut Connection, turn: NewTurn, now: i64) -> Result<Begun, RelayE
             tx.execute(
                 "INSERT INTO conversations (id, target, created_at, last_used_at) VALUES (?1, ?2, ?3, ?3)",
                 params![id, turn.target, now],
+            )
+            .map_err(internal)?;
+            stats::add(
+                &tx,
+                &stats::Traffic {
+                    conversations_started: 1,
+                    ..stats::Traffic::default()
+                },
             )
             .map_err(internal)?;
 

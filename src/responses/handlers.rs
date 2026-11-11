@@ -70,9 +70,15 @@ fn relay_json(
     status: StatusCode,
     value: &Value,
     request_headers: &HeaderMap,
+    counters: Option<&Counters>,
 ) -> Result<Response, RelayError> {
     let plain = serde_json::to_vec(value).map_err(|_| RelayError::Internal)?;
     let gzip = codec::accepts_gzip(request_headers);
+
+    if let (true, Some(counters)) = (gzip, counters) {
+        counters.plain_out.store(plain.len() as u64, Ordering::Relaxed);
+    }
+
     let body = if gzip {
         codec::gzip(&plain).map_err(|_| RelayError::Internal)?
     } else {
@@ -125,7 +131,9 @@ async fn create_turn(
     )
     .await?;
 
-    if let Some(counters) = parts.extensions.get::<Counters>() {
+    let counters = parts.extensions.get::<Counters>().cloned();
+
+    if let Some(counters) = &counters {
         counters.decoded_in.store(body.len() as u64, Ordering::Relaxed);
     }
 
@@ -164,16 +172,15 @@ async fn create_turn(
 
     upstream_headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
+    let chat = Bytes::from(chat.to_string());
+
+    if let Some(counters) = &counters {
+        counters.mark_forwarded(chat.len());
+    }
+
     let sent = state
         .upstream
-        .send(
-            target,
-            Method::POST,
-            CHAT_PATH,
-            None,
-            &upstream_headers,
-            Bytes::from(chat.to_string()),
-        )
+        .send(target, Method::POST, CHAT_PATH, None, &upstream_headers, chat)
         .await;
     let upstream = match sent {
         Ok(upstream) => upstream,
@@ -187,7 +194,7 @@ async fn create_turn(
     if !upstream.status().is_success() {
         guard.abort().await;
 
-        return relay_answer(state, upstream, &parts.headers, &Method::POST);
+        return relay_answer(state, upstream, &parts.headers, &Method::POST, counters.as_ref());
     }
 
     let body = match state.upstream.body_stream(upstream) {
@@ -206,6 +213,7 @@ async fn create_turn(
             envelope,
             body,
             &parts.headers,
+            counters,
         ));
     }
 
@@ -232,7 +240,7 @@ async fn create_turn(
                 completion.incomplete_reason.as_deref(),
             );
 
-            relay_json(StatusCode::OK, &object, &parts.headers)
+            relay_json(StatusCode::OK, &object, &parts.headers, counters.as_ref())
         }
         Err(error) => {
             guard.abort().await;
@@ -261,6 +269,7 @@ fn streamed(
     envelope: Envelope,
     body: BodyStream,
     request_headers: &HeaderMap,
+    counters: Option<Counters>,
 ) -> Response {
     let (tx, rx) = mpsc::channel::<Result<Bytes, RelayError>>(64);
 
@@ -268,10 +277,13 @@ fn streamed(
 
     let events = stream::unfold(rx, |mut rx| async move { rx.recv().await.map(|item| (item, rx)) });
     let gzip = codec::accepts_gzip(request_headers);
-    let body = if gzip {
-        Body::from_stream(codec::gzip_stream(events))
-    } else {
-        Body::from_stream(events)
+    let body = match (gzip, counters) {
+        (true, Some(counters)) => Body::from_stream(codec::gzip_stream(codec::counted(
+            events,
+            counters.plain_out.clone(),
+        ))),
+        (true, None) => Body::from_stream(codec::gzip_stream(events)),
+        (false, _) => Body::from_stream(events),
     };
     let mut response = Response::new(body);
     let headers = response.headers_mut();
@@ -384,7 +396,7 @@ pub async fn retrieve(
         stored.incomplete_reason.as_deref(),
     );
 
-    relay_json(StatusCode::OK, &object, &headers)
+    relay_json(StatusCode::OK, &object, &headers, None)
 }
 
 /// `DELETE /v1/responses/{id}`
@@ -395,7 +407,7 @@ pub async fn delete_response(
 ) -> Result<Response, RelayError> {
     state.store.delete_response(id.clone()).await?;
 
-    relay_json(StatusCode::OK, &wire::deleted_response(&id), &headers)
+    relay_json(StatusCode::OK, &wire::deleted_response(&id), &headers, None)
 }
 
 /// `DELETE /v1/conversations/{id}`
@@ -406,5 +418,5 @@ pub async fn delete_conversation(
 ) -> Result<Response, RelayError> {
     state.store.delete_conversation(id.clone()).await?;
 
-    relay_json(StatusCode::OK, &wire::deleted_conversation(&id), &headers)
+    relay_json(StatusCode::OK, &wire::deleted_conversation(&id), &headers, None)
 }

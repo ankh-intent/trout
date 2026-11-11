@@ -56,8 +56,11 @@ async fn forward_to(
     )
     .await?;
 
-    if let Some(counters) = parts.extensions.get::<Counters>() {
+    let counters = parts.extensions.get::<Counters>();
+
+    if let Some(counters) = counters {
         counters.decoded_in.store(body.len() as u64, Ordering::Relaxed);
+        counters.mark_forwarded(body.len());
     }
 
     let upstream = state
@@ -72,7 +75,7 @@ async fn forward_to(
         )
         .await?;
 
-    relay_answer(state, upstream, &parts.headers, &parts.method)
+    relay_answer(state, upstream, &parts.headers, &parts.method, counters)
 }
 
 /// Returns the target's answer to the client: status and headers unchanged, body streamed and
@@ -82,6 +85,7 @@ pub fn relay_answer(
     upstream: reqwest::Response,
     request_headers: &HeaderMap,
     method: &Method,
+    counters: Option<&Counters>,
 ) -> Result<Response, RelayError> {
     let status = upstream.status();
     let mut headers = response_headers(upstream.headers());
@@ -111,7 +115,13 @@ pub fn relay_answer(
     let body = if has_body && codec::accepts_gzip(request_headers) {
         headers.insert(CONTENT_ENCODING, HeaderValue::from_static("gzip"));
 
-        Body::from_stream(codec::gzip_stream(chunks))
+        match counters {
+            Some(counters) => Body::from_stream(codec::gzip_stream(codec::counted(
+                chunks,
+                counters.plain_out.clone(),
+            ))),
+            None => Body::from_stream(codec::gzip_stream(chunks)),
+        }
     } else {
         Body::from_stream(chunks)
     };

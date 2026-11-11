@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>trout</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #6b7480; --line: #e2e5ea;
+    --accent: #1f7a5c; --accent-soft: #cfe9df; --warn: #b4472f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a; --card: #1d2125; --text: #e8eaed; --muted: #98a1ab; --line: #2c3238;
+      --accent: #4cc59a; --accent-soft: #24443a; --warn: #f08a70;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 48px; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  main { max-width: 920px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: 0.02em; }
+  h2 { font-size: 13px; margin: 28px 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .spacer { flex: 1; }
+  button, input {
+    font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
+    border-radius: 6px; padding: 6px 10px;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  #login { display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0; }
+  #login input { flex: 1; min-width: 220px; }
+  #error { color: var(--warn); margin: 12px 0; min-height: 1.4em; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card .label { color: var(--muted); font-size: 13px; }
+  .card .value { font-size: 26px; font-weight: 600; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .card .note { color: var(--muted); font-size: 13px; }
+  .card.big .value { color: var(--accent); }
+  .meter { height: 8px; border-radius: 4px; background: var(--accent-soft); overflow: hidden; margin-top: 8px; }
+  .meter > div { height: 100%; background: var(--accent); }
+  #chart {
+    display: flex; align-items: flex-end; gap: 3px; height: 160px; padding: 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  }
+  .bar { flex: 1; min-width: 4px; max-width: 28px; height: 100%; display: flex; align-items: flex-end; }
+  .bar .would { width: 100%; background: var(--accent-soft); border-radius: 3px 3px 0 0; display: flex; align-items: flex-end; }
+  .bar .sent { width: 100%; min-height: 2px; background: var(--accent); border-radius: 3px 3px 0 0; }
+  .legend { display: flex; gap: 16px; color: var(--muted); font-size: 13px; margin-top: 8px; flex-wrap: wrap; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  th, td { padding: 7px 12px; text-align: right; font-variant-numeric: tabular-nums; border-top: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; border-top: 0; }
+  th:first-child, td:first-child { text-align: left; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>trout</h1>
+    <span class="meta" id="meta"></span>
+    <span class="spacer"></span>
+    <button id="refresh" hidden>Refresh</button>
+    <button id="logout" hidden>Forget key</button>
+  </header>
+
+  <form id="login" hidden>
+    <input id="key" type="password" autocomplete="off" placeholder="Access key (X-Trout-Key)" aria-label="Access key">
+    <button type="submit">Show statistics</button>
+  </form>
+  <div id="error" role="alert"></div>
+
+  <div id="content" hidden>
+    <div class="cards">
+      <div class="card big">
+        <div class="label">Upload saved</div>
+        <div class="value" id="up-saved"></div>
+        <div class="note" id="up-note"></div>
+      </div>
+      <div class="card big">
+        <div class="label">Download saved</div>
+        <div class="value" id="down-saved"></div>
+        <div class="note" id="down-note"></div>
+      </div>
+      <div class="card">
+        <div class="label">Conversations served</div>
+        <div class="value" id="conversations"></div>
+        <div class="note" id="conversations-note"></div>
+      </div>
+      <div class="card">
+        <div class="label">Requests</div>
+        <div class="value" id="requests"></div>
+        <div class="note" id="requests-note"></div>
+      </div>
+      <div class="card">
+        <div class="label">Stored now</div>
+        <div class="value" id="stored"></div>
+        <div class="note" id="stored-note"></div>
+        <div class="meter"><div id="stored-meter"></div></div>
+      </div>
+    </div>
+
+    <h2>Upload per day</h2>
+    <div id="chart"></div>
+    <div class="legend">
+      <span><span class="swatch" style="background: var(--accent)"></span>sent by the client</span>
+      <span><span class="swatch" style="background: var(--accent-soft)"></span>would have been sent without the relay</span>
+    </div>
+
+    <h2>By day</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Day (UTC)</th><th>Conversations</th><th>Turns</th><th>Proxied</th><th>Failed</th>
+          <th>Uploaded</th><th>Without relay</th><th>Saved</th>
+        </tr>
+      </thead>
+      <tbody id="days"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+const KEY_STORAGE = 'trout-key';
+const $ = (id) => document.getElementById(id);
+
+const formatBytes = (bytes) => {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  let value = bytes;
+  let unit = 0;
+
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+
+  return `${unit === 0 ? value : value.toFixed(value >= 100 ? 0 : 1)} ${units[unit]}`;
+};
+
+const formatCount = (count) => count.toLocaleString('en-US');
+
+const percent = (part, whole) => (whole > 0 ? `${((100 * part) / whole).toFixed(1)}%` : 'n/a');
+
+const formatDuration = (seconds) => {
+  if (seconds < 90) {
+    return `${seconds}s`;
+  }
+
+  if (seconds < 5400) {
+    return `${Math.round(seconds / 60)}m`;
+  }
+
+  if (seconds < 129600) {
+    return `${Math.round(seconds / 3600)}h`;
+  }
+
+  return `${Math.round(seconds / 86400)}d`;
+};
+
+const cell = (text) => {
+  const td = document.createElement('td');
+
+  td.textContent = text;
+
+  return td;
+};
+
+const renderChart = (days) => {
+  const chart = $('chart');
+  const peak = Math.max(1, ...days.map((day) => Math.max(day.provider_up_bytes, day.client_up_bytes)));
+
+  chart.replaceChildren();
+
+  if (days.length === 0) {
+    const empty = document.createElement('div');
+
+    empty.className = 'empty';
+    empty.textContent = 'No traffic yet.';
+    chart.append(empty);
+
+    return;
+  }
+
+  for (const day of days) {
+    const bar = document.createElement('div');
+    const would = document.createElement('div');
+    const sent = document.createElement('div');
+    const total = Math.max(day.provider_up_bytes, day.client_up_bytes);
+
+    bar.className = 'bar';
+    bar.title = `${day.day}: sent ${formatBytes(day.client_up_bytes)}, without relay ${formatBytes(day.provider_up_bytes)}`;
+    would.className = 'would';
+    would.style.height = `${Math.max(1, (100 * total) / peak)}%`;
+    sent.className = 'sent';
+    sent.style.height = `${total > 0 ? (100 * day.client_up_bytes) / total : 0}%`;
+    would.append(sent);
+    bar.append(would);
+    chart.append(bar);
+  }
+};
+
+const renderDays = (days) => {
+  const body = $('days');
+
+  body.replaceChildren();
+
+  for (const day of [...days].reverse()) {
+    const row = document.createElement('tr');
+
+    row.append(
+      cell(day.day),
+      cell(formatCount(day.conversations_started)),
+      cell(formatCount(day.response_turns)),
+      cell(formatCount(day.proxy_requests)),
+      cell(formatCount(day.failed_requests)),
+      cell(formatBytes(day.client_up_bytes)),
+      cell(formatBytes(day.provider_up_bytes)),
+      cell(formatBytes(day.upload_saved_bytes)),
+    );
+    body.append(row);
+  }
+
+  if (days.length === 0) {
+    const row = document.createElement('tr');
+    const empty = cell('No traffic yet.');
+
+    empty.colSpan = 8;
+    empty.className = 'empty';
+    row.append(empty);
+    body.append(row);
+  }
+};
+
+const render = (stats) => {
+  const totals = stats.totals;
+  const store = stats.store;
+
+  $('meta').textContent = `v${stats.version} · up ${formatDuration(stats.uptime_secs)} · updated ${new Date(stats.generated_at_ms).toLocaleTimeString()}`;
+
+  $('up-saved').textContent = formatBytes(totals.upload_saved_bytes);
+  $('up-note').textContent = `${percent(totals.upload_saved_bytes, totals.provider_up_bytes)} of ${formatBytes(totals.provider_up_bytes)}; sent ${formatBytes(totals.client_up_bytes)}`;
+
+  $('down-saved').textContent = formatBytes(totals.download_saved_bytes);
+  $('down-note').textContent = `${percent(totals.download_saved_bytes, totals.plain_down_bytes)} of ${formatBytes(totals.plain_down_bytes)}; received ${formatBytes(totals.client_down_bytes)}`;
+
+  $('conversations').textContent = formatCount(totals.conversations_started);
+  $('conversations-note').textContent = `${formatCount(totals.response_turns)} turns`;
+
+  $('requests').textContent = formatCount(totals.response_turns + totals.proxy_requests);
+  $('requests-note').textContent = `${formatCount(totals.proxy_requests)} proxied · ${formatCount(totals.failed_requests)} failed`;
+
+  $('stored').textContent = formatBytes(store.bytes);
+  $('stored-note').textContent = `${formatCount(store.conversations)} conversations · ${formatCount(store.responses)} answers · cap ${formatBytes(store.max_bytes)} · kept ${formatDuration(store.ttl_secs)}`;
+  $('stored-meter').style.width = `${store.max_bytes > 0 ? Math.min(100, (100 * store.bytes) / store.max_bytes) : 0}%`;
+
+  renderChart(stats.days);
+  renderDays(stats.days);
+};
+
+const show = (signedIn) => {
+  $('login').hidden = signedIn;
+  $('content').hidden = !signedIn;
+  $('refresh').hidden = !signedIn;
+  $('logout').hidden = !signedIn;
+};
+
+const load = async () => {
+  const key = sessionStorage.getItem(KEY_STORAGE);
+
+  $('error').textContent = '';
+
+  if (!key) {
+    show(false);
+
+    return;
+  }
+
+  try {
+    const response = await fetch('/stats', { headers: { 'X-Trout-Key': key }, cache: 'no-store' });
+
+    if (response.status === 401) {
+      sessionStorage.removeItem(KEY_STORAGE);
+      show(false);
+      $('error').textContent = 'That key was not accepted.';
+
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    render(await response.json());
+    show(true);
+  } catch (error) {
+    $('error').textContent = `Could not load statistics: ${error.message}`;
+  }
+};
+
+$('login').addEventListener('submit', (event) => {
+  event.preventDefault();
+
+  const key = $('key').value.trim();
+
+  if (key) {
+    sessionStorage.setItem(KEY_STORAGE, key);
+    $('key').value = '';
+    load();
+  }
+});
+
+$('refresh').addEventListener('click', () => {
+  load();
+});
+
+$('logout').addEventListener('click', () => {
+  sessionStorage.removeItem(KEY_STORAGE);
+  show(false);
+});
+
+load();
+</script>
+</body>
+</html>

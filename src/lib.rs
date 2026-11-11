@@ -3,6 +3,7 @@
 pub mod auth;
 pub mod codec;
 pub mod config;
+pub mod dashboard;
 pub mod error;
 pub mod proxy;
 pub mod responses;
@@ -23,12 +24,15 @@ use crate::error::RelayError;
 use crate::responses::handlers;
 use crate::store::sweeper::{self, Sweeper};
 use crate::store::{Store, StoreError};
+use crate::telemetry::TrafficRecorder;
 use crate::upstream::Upstream;
 
 pub struct AppState {
     pub config: Config,
     pub upstream: Upstream,
     pub store: Store,
+    pub traffic: TrafficRecorder,
+    pub started: std::time::Instant,
     _sweeper: Sweeper,
 }
 
@@ -46,15 +50,20 @@ pub fn build_app(config: Config) -> Result<Router, BuildError> {
     let upstream = Upstream::new(&config.limits)?;
     let store = Store::open(&config.store.path)?;
     let sweeper = sweeper::spawn(store.clone(), &config.store);
+    let traffic = TrafficRecorder::spawn(store.clone());
     let state = Arc::new(AppState {
         config,
         upstream,
         store,
+        traffic,
+        started: std::time::Instant::now(),
         _sweeper: sweeper,
     });
 
     Ok(Router::new()
         .route(auth::HEALTH_PATH, get(health))
+        .route(auth::DASHBOARD_PATH, get(dashboard::page))
+        .route("/stats", get(dashboard::stats))
         .route("/v1/responses", post(handlers::create))
         .route(
             "/v1/responses/{id}",
@@ -64,7 +73,7 @@ pub fn build_app(config: Config) -> Result<Router, BuildError> {
         .route("/v1/{*rest}", any(proxy::forward))
         .fallback(route_not_found)
         .layer(middleware::from_fn_with_state(state.clone(), auth::require_key))
-        .layer(middleware::from_fn(telemetry::record))
+        .layer(middleware::from_fn_with_state(state.clone(), telemetry::record))
         .with_state(state))
 }
 
