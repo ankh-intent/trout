@@ -140,8 +140,9 @@ other pages, and loads nothing from anywhere else.
 
 All of its figures and text come from [`src/pages/providers.json`](src/pages/providers.json), which is
 compiled into the binary. To publish new data, edit that file, commit and deploy; the page itself does
-not change. `cargo test --lib pages` checks the file parses and every provider has the fields the page
-needs. Fields a source did not give (`price_out`, `cost_per_task`, `speed`, `rank`) are `null`.
+not change. Each provider carries a `models` list; its first entry is the flagship shown in the charts.
+`cargo test --lib pages` checks the file parses and every provider and model has the fields the page
+needs. Fields a source did not give (`price_in`, `price_out`, `cost_per_task`, `speed`, `rank`) are `null`.
 
 To add a page to the navigation bar, add it to `NAV_ITEMS` in [`src/pages.rs`](src/pages.rs).
 

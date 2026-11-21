@@ -87,6 +87,8 @@
   svg .bar.soft { fill: var(--series-soft); }
   svg .dot { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
   svg .dot.soft { fill: var(--series-soft); }
+  svg .dot.minor { fill: var(--surface); stroke: var(--series); stroke-width: 1.5; }
+  svg .dot.minor.soft { stroke: var(--series-soft); }
   svg .hit { fill: transparent; cursor: default; }
   svg .hit:hover + .bar, svg .dot:hover { opacity: 0.8; }
 
@@ -106,6 +108,10 @@
   tr:last-child td { border-bottom: 0; }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   tr.extra td { color: var(--ink-2); }
+  tr.lead td { border-top: 2px solid var(--axis); }
+  tbody tr.lead:first-child td { border-top: 0; }
+  tr.lead td.model { font-weight: 600; }
+  td.model { white-space: nowrap; }
 
   #tip {
     position: fixed;
@@ -189,14 +195,14 @@
 <!--NAV-->
 <main>
   <h1>LLM API providers: price and performance</h1>
-  <div class="sub">Data collected <span id="m-collected"></span> · flagship API model per provider · prices in USD per 1M tokens</div>
+  <div class="sub">Data collected <span id="m-collected"></span> · <span id="m-count"></span> · prices in USD per 1M tokens</div>
 
   <div class="note">
     <p><strong>Disclosure:</strong> <span id="m-disclosure"></span></p>
   </div>
 
   <h2>Ranking by priority</h2>
-  <p>Method: a weighted-sum model. Each trait is rescaled to 0–100 across the listed providers (100 = best in this set, 0 = worst), then combined with the three weights set by the knob.</p>
+  <p>Method: a weighted-sum model. Each trait is rescaled to 0–100 across every listed model (100 = best in this set, 0 = worst), then combined with the three weights set by the knob.</p>
   <div class="card">
     <div class="rank-top">
       <div>
@@ -209,6 +215,12 @@
           <button type="button" data-weights="0,0,1">Speed</button>
           <button type="button" data-weights="1,1,1">Balanced</button>
         </div>
+        <label for="scope">Rank</label>
+        <select id="scope">
+          <option value="best">Each provider's best model for this priority</option>
+          <option value="all">Every model</option>
+          <option value="flagship">Flagship models only</option>
+        </select>
         <label for="basis">Price measured as</label>
         <select id="basis">
           <option value="list">List price (3:1 input:output blend)</option>
@@ -217,7 +229,7 @@
       </div>
       <div>
         <h3>Provider profiles</h3>
-        <div class="sub">Each provider's three scores: 0 at the centre, 100 at a corner. The dotted triangle is the current priority. Hover a provider to bring it forward; click it to hide or show it.</div>
+        <div class="sub">One shape per provider: the three scores of its best model for the current priority (its flagship when ranking flagships only). 0 at the centre, 100 at a corner. The dotted triangle is the current priority. Hover a provider to bring it forward; click it to hide or show it.</div>
         <div id="radar"></div>
         <div class="chips" id="radar-legend"></div>
       </div>
@@ -230,21 +242,22 @@
     <div class="scroll"><table id="t-rank"></table></div>
     <div class="formula">score = w(price) × price + w(intelligence) × intelligence + w(speed) × speed,  weights sum to 100%</div>
     <p class="sub">Price scores higher when lower; intelligence and speed score higher when higher. Intelligence is rescaled linearly; price and speed on a log scale, because they span orders of magnitude.
-    "Avg rank" is the provider's mean position over every point of the triangle for the chosen price measure: one figure that does not depend on where the knob sits.
-    Scores are relative to the listed providers only, so adding or removing one shifts the rest. Providers missing the chosen price measure are listed unranked; a missing speed is filled with the group median and marked *.</p>
+    "Avg rank" is the row's mean position over every point of the triangle for the chosen price measure: one figure that does not depend on where the knob sits. When ranking each provider's best model, the model in a provider's row changes with the knob, and its average rank follows the provider.
+    Scores are relative to the listed models only, so adding or removing one shifts the rest. Models missing the chosen price measure are listed unranked; a missing speed is filled with the group median and marked *.</p>
   </div>
 
   <h2>Charts</h2>
-  <p>Ranked providers are in the main colour. Providers without a place in the ranking are shown lighter.</p>
+  <p>Ranked providers are in the main colour. Providers without a place in the ranking are shown lighter. The bar charts show each provider's flagship; the scatter shows every model.</p>
   <div class="legend">
     <span><i style="background:var(--series)"></i>Ranked by usage</span>
     <span><i style="background:var(--series-soft)"></i>Unranked, for reference</span>
+    <span><i style="background:var(--surface);border:1.5px solid var(--series);box-sizing:border-box"></i>Non-flagship model</span>
   </div>
 
   <div class="grid">
     <div class="card wide">
       <h3>Intelligence against output price</h3>
-      <div class="sub">Artificial Analysis Intelligence Index (higher is better) by list output price per 1M tokens, log scale.</div>
+      <div class="sub">Artificial Analysis Intelligence Index (higher is better) by list output price per 1M tokens, log scale. Filled dots are flagships, labelled by provider; hollow dots are the other models.</div>
       <div id="scatter"></div>
     </div>
     <div class="card">
@@ -269,14 +282,12 @@
     </div>
   </div>
 
-  <h2>Flagship comparison</h2>
+  <h2>All models</h2>
   <p id="m-ranking"></p>
+  <p id="m-models"></p>
   <div class="scroll"><table id="t-main"></table></div>
 
   <p class="sub">In every table, a provider name opens its API sign-up page and a model name opens that provider's pricing page.</p>
-
-  <h2>Cheaper tiers</h2>
-  <div class="scroll"><table id="t-cheap"></table></div>
 
   <h2>Source affiliations and adjustments</h2>
   <p id="m-affiliation"></p>
@@ -296,26 +307,16 @@ const data = JSON.parse(document.getElementById('data').textContent) || {};
 const meta = data.meta || {};
 const providers = data.providers || [];
 const share = data.share || [];
-const cheap = data.cheaper_tiers || [];
 const affiliations = data.affiliations || [];
 const gaps = data.gaps || [];
 const sources = data.sources || [];
-const byName = new Map(providers.map((p) => [p.name, p]));
+const models = providers.flatMap((provider) => (provider.models || []).map((model, position) => ({ ...model, provider, flagship: position === 0 })));
+const flagships = models.filter((m) => m.flagship);
 
 const esc = (value) => String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const anchor = (url, label, title) => `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(title)}">${esc(label)}</a>`;
-
-const providerLink = (name) => {
-  const provider = byName.get(name);
-
-  return provider && provider.signup_url ? anchor(provider.signup_url, name, `Sign up for ${name} API access`) : esc(name);
-};
-
-const modelLink = (name, model) => {
-  const provider = byName.get(name);
-
-  return provider && provider.pricing_url ? anchor(provider.pricing_url, model, `${name} pricing page`) : esc(model);
-};
+const providerLink = (provider) => (provider.signup_url ? anchor(provider.signup_url, provider.name, `Sign up for ${provider.name} API access`) : esc(provider.name));
+const modelLink = (m) => (m.provider.pricing_url ? anchor(m.provider.pricing_url, m.name, `${m.provider.name} pricing page`) : esc(m.name));
 
 const NS = 'http://www.w3.org/2000/svg';
 const tip = document.getElementById('tip');
@@ -403,7 +404,7 @@ const barChart = (targetId, rows, format, tipText) => {
 };
 
 const scatter = () => {
-  const rows = providers.filter((p) => p.price_out !== null);
+  const rows = models.filter((m) => m.price_out !== null).sort((a, b) => Number(a.flagship) - Number(b.flagship));
 
   if (rows.length === 0) {
     return;
@@ -440,15 +441,18 @@ const scatter = () => {
   svg.appendChild(el('text', { x: m.left + plotW / 2, y: height - 6, 'text-anchor': 'middle', class: 'tick' }, 'Output price per 1M tokens (log scale)'));
   svg.appendChild(el('text', { x: 12, y: m.top + plotH / 2, 'text-anchor': 'middle', class: 'tick', transform: `rotate(-90 12 ${m.top + plotH / 2})` }, 'Intelligence Index'));
 
-  for (const p of rows) {
-    const cx = xPos(p.price_out);
-    const cy = yPos(p.index);
-    const dot = el('circle', { cx, cy, r: 6, class: p.rank === null ? 'dot soft' : 'dot' });
-    const isBelow = p.label_below === true;
+  for (const m of rows) {
+    const cx = xPos(m.price_out);
+    const cy = yPos(m.index);
+    const tone = m.provider.rank === null ? ' soft' : '';
+    const dot = el('circle', { cx, cy, r: m.flagship ? 6 : 4, class: (m.flagship ? 'dot' : 'dot minor') + tone });
 
-    svg.appendChild(el('text', { x: cx + 10, y: cy + (isBelow ? 16 : 4), class: 'val' }, p.name));
+    if (m.flagship) {
+      svg.appendChild(el('text', { x: cx + 10, y: cy + (m.provider.label_below === true ? 16 : 4), class: 'val' }, m.provider.name));
+    }
+
     svg.appendChild(dot);
-    bindTip(dot, `<strong>${esc(p.name)}</strong> · ${esc(p.model)}<br>Index ${p.index}<br>$${p.price_in} in / $${p.price_out} out${p.price_note ? '<br>' + esc(p.price_note) : ''}`);
+    bindTip(dot, `<strong>${esc(m.provider.name)}</strong> · ${esc(m.name)}<br>Index ${m.index}<br>${money(m.price_in)} in / ${money(m.price_out)} out${m.price_note ? '<br>' + esc(m.price_note) : ''}`);
   }
 
   document.getElementById('scatter').appendChild(svg);
@@ -458,9 +462,9 @@ const table = (targetId, head, rows) => {
   const target = document.getElementById(targetId);
   const thead = '<thead><tr>' + head.map((h) => `<th${h.num ? ' class="num"' : ''}>${h.label}</th>`).join('') + '</tr></thead>';
   const tbody = rows.map((row) => {
-    const cells = row.cells.map((cell, i) => `<td${head[i].num ? ' class="num"' : ''}>${cell}</td>`).join('');
+    const cells = row.cells.map((cell, i) => `<td${head[i].cls ? ` class="${head[i].cls}"` : head[i].num ? ' class="num"' : ''}>${cell}</td>`).join('');
 
-    return `<tr${row.extra ? ' class="extra"' : ''}>${cells}</tr>`;
+    return `<tr${row.cls ? ` class="${row.cls}"` : ''}>${cells}</tr>`;
   }).join('');
 
   target.innerHTML = thead + '<tbody>' + tbody + '</tbody>';
@@ -473,21 +477,21 @@ scatter();
 
 barChart(
   'chart-index',
-  providers.map((p) => ({ name: p.name, value: p.index, soft: p.rank === null, model: p.model })),
+  flagships.map((m) => ({ name: m.provider.name, value: m.index, soft: m.provider.rank === null, model: m.name })),
   (value) => String(Math.round(value)),
   (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>Index ${row.value}`,
 );
 
 barChart(
   'chart-cost',
-  providers.filter((p) => p.cost_per_task !== null).map((p) => ({ name: p.name, value: p.cost_per_task, soft: p.rank === null, model: p.model })),
+  flagships.filter((m) => m.cost_per_task !== null).map((m) => ({ name: m.provider.name, value: m.cost_per_task, soft: m.provider.rank === null, model: m.name })),
   (value, tick) => '$' + (tick ? value : value.toFixed(2)),
   (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>$${row.value.toFixed(2)} per task`,
 );
 
 barChart(
   'chart-speed',
-  providers.filter((p) => p.speed !== null).map((p) => ({ name: p.name, value: p.speed, soft: p.rank === null, model: p.model })),
+  flagships.filter((m) => m.speed !== null).map((m) => ({ name: m.provider.name, value: m.speed, soft: m.provider.rank === null, model: m.name })),
   (value) => String(Math.round(value)),
   (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>${row.value} tokens/s`,
 );
@@ -504,7 +508,7 @@ table(
   [
     { label: '#', num: true },
     { label: 'Provider' },
-    { label: 'Flagship API model' },
+    { label: 'Model', cls: 'model' },
     { label: 'Price in', num: true },
     { label: 'Price out', num: true },
     { label: 'Price note' },
@@ -514,29 +518,21 @@ table(
     { label: 'Arena Elo raw', num: true },
     { label: 'Arena Elo adjusted', num: true },
   ],
-  providers.map((p) => ({
-    extra: p.rank === null,
+  models.map((m) => ({
+    cls: [m.flagship ? 'lead' : '', m.provider.rank === null ? 'extra' : ''].filter(Boolean).join(' '),
     cells: [
-      dash(p.rank, String),
-      providerLink(p.name),
-      modelLink(p.name, p.model),
-      money(p.price_in),
-      dash(p.price_out, money),
-      esc(p.price_note || ''),
-      p.index,
-      dash(p.cost_per_task, (value) => '$' + value.toFixed(2)),
-      dash(p.speed, String),
-      dash(p.arena_raw, String),
-      dash(p.arena_adjusted, String),
+      m.flagship ? dash(m.provider.rank, String) : '',
+      providerLink(m.provider),
+      modelLink(m),
+      dash(m.price_in, money),
+      dash(m.price_out, money),
+      esc(m.price_note || ''),
+      m.index,
+      dash(m.cost_per_task, (value) => '$' + value.toFixed(2)),
+      dash(m.speed, String),
+      dash(m.arena_raw ?? null, String),
+      dash(m.arena_adjusted ?? null, String),
     ],
-  })),
-);
-
-table(
-  't-cheap',
-  [{ label: 'Provider' }, { label: 'Model' }, { label: 'Price in / out', num: true }, { label: 'AA Index', num: true }, { label: 'Speed, tok/s', num: true }],
-  cheap.map((row) => ({
-    cells: [providerLink(row.provider), modelLink(row.provider, row.model), `${money(row.price_in)} / ${money(row.price_out)}`, row.index, row.speed],
   })),
 );
 
@@ -555,13 +551,15 @@ for (const [id, text] of [
   ['m-collected', meta.collected],
   ['m-disclosure', meta.disclosure],
   ['m-ranking', meta.ranking_note],
+  ['m-models', meta.models_note],
+  ['m-count', `${models.length} models from ${providers.length} providers`],
   ['m-affiliation', meta.affiliation_note],
   ['m-share', meta.share_period],
 ]) {
   document.getElementById(id).textContent = text || '';
 }
 
-const listBlend = (p) => (p.price_out === null ? null : (3 * p.price_in + p.price_out) / 4);
+const listBlend = (m) => (m.price_in === null || m.price_out === null ? null : (3 * m.price_in + m.price_out) / 4);
 const median = (values) => {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
@@ -580,27 +578,27 @@ const scale = (value, min, max, log) => {
 };
 
 const traitScores = (basis) => {
-  const speeds = providers.filter((p) => p.speed !== null).map((p) => p.speed);
+  const speeds = models.filter((m) => m.speed !== null).map((m) => m.speed);
   const speedMedian = median(speeds);
-  const priced = providers
-    .map((p) => ({ p, price: basis === 'list' ? listBlend(p) : p.cost_per_task }))
+  const priced = models
+    .map((m) => ({ m, price: basis === 'list' ? listBlend(m) : m.cost_per_task }))
     .filter((row) => row.price !== null);
   const prices = priced.map((row) => row.price);
-  const indexes = providers.map((p) => p.index);
+  const indexes = models.map((m) => m.index);
   const bounds = {
     price: [Math.min(...prices), Math.max(...prices)],
     index: [Math.min(...indexes), Math.max(...indexes)],
     speed: [Math.min(...speeds), Math.max(...speeds)],
   };
 
-  return priced.map(({ p, price }) => ({
-    p,
+  return priced.map(({ m, price }) => ({
+    m,
     price,
-    speedEst: p.speed === null,
+    speedEst: m.speed === null,
     scores: [
       100 - scale(price, bounds.price[0], bounds.price[1], true),
-      scale(p.index, bounds.index[0], bounds.index[1], false),
-      scale(p.speed === null ? speedMedian : p.speed, bounds.speed[0], bounds.speed[1], true),
+      scale(m.index, bounds.index[0], bounds.index[1], false),
+      scale(m.speed === null ? speedMedian : m.speed, bounds.speed[0], bounds.speed[1], true),
     ],
   }));
 };
@@ -669,27 +667,55 @@ const rankAt = (rows, w) => rows
   })
   .sort((a, b) => b.score - a.score);
 
-const averageRanks = (basis, rows) => {
-  if (averageCache.has(basis)) {
-    return averageCache.get(basis);
+// What gets ranked: every model, flagships only, or one row per provider holding whichever of its
+// models scores highest at these weights.
+const select = (rows, w, scope) => {
+  const ranked = rankAt(scope === 'flagship' ? rows.filter((row) => row.m.flagship) : rows, w);
+
+  if (scope !== 'best') {
+    return ranked;
   }
 
-  const totals = new Map(rows.map((row) => [row.p.name, 0]));
+  const seen = new Set();
+
+  return ranked.filter((row) => {
+    if (seen.has(row.m.provider)) {
+      return false;
+    }
+
+    seen.add(row.m.provider);
+
+    return true;
+  });
+};
+
+const keyOf = (row, scope) => (scope === 'best' ? row.m.provider.name : `${row.m.provider.name}|${row.m.name}`);
+
+const averageRanks = (basis, scope, rows) => {
+  const cacheKey = `${basis}|${scope}`;
+
+  if (averageCache.has(cacheKey)) {
+    return averageCache.get(cacheKey);
+  }
+
+  const totals = new Map();
   const steps = 20;
   let points = 0;
 
   for (let i = 0; i <= steps; i++) {
     for (let j = 0; j <= steps - i; j++) {
-      rankAt(rows, [i / steps, j / steps, (steps - i - j) / steps]).forEach((row, position) => {
-        totals.set(row.p.name, totals.get(row.p.name) + position + 1);
+      select(rows, [i / steps, j / steps, (steps - i - j) / steps], scope).forEach((row, position) => {
+        const key = keyOf(row, scope);
+
+        totals.set(key, (totals.get(key) || 0) + position + 1);
       });
       points += 1;
     }
   }
 
-  const averages = new Map([...totals].map(([name, total]) => [name, total / points]));
+  const averages = new Map([...totals].map(([key, total]) => [key, total / points]));
 
-  averageCache.set(basis, averages);
+  averageCache.set(cacheKey, averages);
 
   return averages;
 };
@@ -843,26 +869,26 @@ const renderRadar = (rows) => {
   }
 
   for (const row of rows) {
-    if (hidden.has(row.p.name)) {
+    if (hidden.has(row.m.provider.name)) {
       continue;
     }
 
-    const { color, dash } = styleOf(row.p);
+    const { color, dash } = styleOf(row.m.provider);
     const profile = el('polygon', {
       points: shape(row.scores.map((score) => score / 100)),
       class: 'profile',
       stroke: color,
       fill: color,
-      'data-provider': row.p.name,
+      'data-provider': row.m.provider.name,
     });
 
     if (dash) {
       profile.setAttribute('stroke-dasharray', dash);
     }
 
-    profile.addEventListener('mouseenter', () => focusProvider(row.p.name));
+    profile.addEventListener('mouseenter', () => focusProvider(row.m.provider.name));
     profile.addEventListener('mouseleave', () => focusProvider(null));
-    bindTip(profile, `<strong>${esc(row.p.name)}</strong> · ${esc(row.p.model)}<br>Price ${Math.round(row.scores[0])} · Intelligence ${Math.round(row.scores[1])} · Speed ${Math.round(row.scores[2])}${row.speedEst ? '*' : ''}`);
+    bindTip(profile, `<strong>${esc(row.m.provider.name)}</strong> · ${esc(row.m.name)}<br>Price ${Math.round(row.scores[0])} · Intelligence ${Math.round(row.scores[1])} · Speed ${Math.round(row.scores[2])}${row.speedEst ? '*' : ''}`);
     svg.appendChild(profile);
   }
 
@@ -889,7 +915,7 @@ const focusProvider = (name) => {
 
 const renderLegend = (rows) => {
   const legend = document.getElementById('radar-legend');
-  const ranked = new Set(rows.map((row) => row.p.name));
+  const ranked = new Set(rows.map((row) => row.m.provider.name));
 
   legend.replaceChildren();
 
@@ -917,30 +943,34 @@ const renderLegend = (rows) => {
   }
 };
 
-const renderTable = (basis, rows) => {
-  const ranked = rankAt(rows, weights);
-  const averages = averageRanks(basis, rows);
-  const missing = providers.filter((p) => !rows.some((row) => row.p === p));
+const renderTable = (basis, scope, rows) => {
+  const ranked = select(rows, weights, scope);
+  const averages = averageRanks(basis, scope, rows);
+  const scored = new Set(rows.map((row) => row.m));
+  const covered = new Set(rows.map((row) => row.m.provider));
+  const missing = scope === 'best'
+    ? flagships.filter((m) => !covered.has(m.provider))
+    : models.filter((m) => !scored.has(m) && (scope === 'all' || m.flagship));
   const priceLabel = basis === 'list' ? 'Blended $/1M' : 'Cost / task';
   const segment = (value, color) => (value > 0.05 ? `<i style="width:${value}%;background:var(${color})"></i>` : '');
   const head = ['Rank', 'Provider', 'Model', 'Score breakdown', 'Score', priceLabel, 'Price score', 'Intelligence score', 'Speed score', 'Avg rank'];
   const numeric = [true, false, false, false, true, true, true, true, true, true];
   const cell = (value, i) => `<td${numeric[i] ? ' class="num"' : ''}>${value}</td>`;
-  const named = (provider) => `<span style="display:inline-flex;align-items:center;gap:6px">${swatch(provider)}${providerLink(provider.name)}</span>`;
-  const body = ranked.map((row, position) => `<tr data-provider="${esc(row.p.name)}">` + [
+  const named = (provider) => `<span style="display:inline-flex;align-items:center;gap:6px">${swatch(provider)}${providerLink(provider)}</span>`;
+  const body = ranked.map((row, position) => `<tr data-provider="${esc(row.m.provider.name)}">` + [
     position + 1,
-    named(row.p),
-    modelLink(row.p.name, row.p.model),
+    named(row.m.provider),
+    modelLink(row.m),
     `<div class="stack">${row.parts.map((part, i) => segment(part, TRAIT_COLORS[i])).join('')}</div>`,
     row.score.toFixed(1),
     '$' + row.price.toFixed(2),
     Math.round(row.scores[0]),
     Math.round(row.scores[1]),
     Math.round(row.scores[2]) + (row.speedEst ? '*' : ''),
-    averages.get(row.p.name).toFixed(1),
+    averages.get(keyOf(row, scope)).toFixed(1),
   ].map(cell).join('') + '</tr>').join('');
-  const tail = missing.map((p) => '<tr class="nodata">' + [
-    '—', named(p), modelLink(p.name, p.model), 'No data for this price measure', '—', '—', '—', '—', '—', '—',
+  const tail = missing.map((m) => '<tr class="nodata">' + [
+    '—', named(m.provider), modelLink(m), 'No data for this price measure', '—', '—', '—', '—', '—', '—',
   ].map(cell).join('') + '</tr>').join('');
   const target = document.getElementById('t-rank');
 
@@ -956,12 +986,13 @@ const renderTable = (basis, rows) => {
 
 const render = () => {
   const basis = document.getElementById('basis').value;
+  const scope = document.getElementById('scope').value;
   const rows = traitScores(basis);
 
   control.draw();
-  renderRadar(rows);
+  renderRadar(select(rows, weights, scope === 'flagship' ? 'flagship' : 'best'));
   renderLegend(rows);
-  renderTable(basis, rows);
+  renderTable(basis, scope, rows);
 };
 
 function setWeights(next) {
@@ -970,6 +1001,7 @@ function setWeights(next) {
 }
 
 document.getElementById('basis').addEventListener('input', render);
+document.getElementById('scope').addEventListener('input', render);
 
 for (const button of document.querySelectorAll('#presets button')) {
   button.addEventListener('click', () => {

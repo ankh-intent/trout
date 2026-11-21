@@ -2,193 +2,473 @@
   "meta": {
     "collected": "15–21 November 2026",
     "share_period": "week of 9 Nov 2026",
-    "disclosure": "This report was compiled by Claude, an Anthropic model. Check the Anthropic row against the sources yourself. Performance figures come only from third-party measurers, never from vendor claims. Prices come from third-party trackers and news; only Google's and MiniMax's were checked on the vendors' own pricing pages.",
+    "disclosure": "This report was compiled by Claude, an Anthropic model. Check the Anthropic rows against the sources yourself. Performance figures come only from third-party measurers, never from vendor claims. List prices are read from the vendors' own pricing pages where those could be read (OpenAI, Google, DeepSeek, Z.ai, Alibaba, Mistral, MiniMax, xAI) and from third-party trackers otherwise.",
     "ranking_note": "Places 1–2 follow gateway and business-spend data; 3–8 follow OpenRouter request share; 9–10 follow OpenRouter weekly token volume and are weakly determined. Providers without a place are commonly compared but did not make the top 10 by measured usage.",
-    "affiliation_note": "The −11 Elo on Arena scores is a rough correction using the effect size Arena itself concedes; the authors of the critique argue the true effect is larger."
+    "affiliation_note": "The −11 Elo on Arena scores is a rough correction using the effect size Arena itself concedes; the authors of the critique argue the true effect is larger.",
+    "models_note": "The first model of each provider is its flagship, used in the charts. The other rows are that provider's current API models that Artificial Analysis has scored; models without an independent score are left out."
   },
   "providers": [
     {
       "rank": 1,
       "name": "OpenAI",
-      "model": "GPT-6.2 Astra",
-      "price_in": 8,
-      "price_out": 40,
-      "price_note": "",
-      "index": 62,
-      "cost_per_task": 4.0,
-      "speed": 79,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://openai.com/api/pricing/",
       "signup_url": "https://platform.openai.com/signup",
-      "label_below": true
+      "label_below": true,
+      "models": [
+        {
+          "name": "GPT-6.2 Astra",
+          "price_in": 8,
+          "price_out": 40,
+          "price_note": "",
+          "index": 62,
+          "cost_per_task": 4.0,
+          "speed": 79,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "GPT-6.2 Sol",
+          "price_in": 2,
+          "price_out": 10,
+          "price_note": "",
+          "index": 57,
+          "cost_per_task": 1.01,
+          "speed": 94,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "GPT-6.1 Terra",
+          "price_in": 1,
+          "price_out": 5,
+          "price_note": "",
+          "index": 51,
+          "cost_per_task": 0.96,
+          "speed": 86,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "GPT-6 Luna",
+          "price_in": 0.1,
+          "price_out": 0.5,
+          "price_note": "",
+          "index": 28,
+          "cost_per_task": 0.15,
+          "speed": 119,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 2,
       "name": "Anthropic",
-      "model": "Claude Fable 5.2",
-      "price_in": 8,
-      "price_out": 40,
-      "price_note": "",
-      "index": 65,
-      "cost_per_task": 26.54,
-      "speed": 87,
-      "arena_raw": 1503,
-      "arena_adjusted": 1503,
       "pricing_url": "https://claude.com/pricing",
-      "signup_url": "https://platform.claude.com/"
+      "signup_url": "https://platform.claude.com/",
+      "models": [
+        {
+          "name": "Claude Fable 5.2",
+          "price_in": 8,
+          "price_out": 40,
+          "price_note": "",
+          "index": 65,
+          "cost_per_task": 26.54,
+          "speed": 87,
+          "arena_raw": 1503,
+          "arena_adjusted": 1503
+        },
+        {
+          "name": "Claude Opus 5.5",
+          "price_in": 4,
+          "price_out": 20,
+          "price_note": "",
+          "index": 59,
+          "cost_per_task": 10.04,
+          "speed": 96,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Claude Sonnet 5.5",
+          "price_in": 2,
+          "price_out": 10,
+          "price_note": "",
+          "index": 55,
+          "cost_per_task": 10.02,
+          "speed": 131,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Claude Haiku 5.5",
+          "price_in": 0.1,
+          "price_out": 0.5,
+          "price_note": "$0.50 / $2.50 above 100K prompt",
+          "index": 37,
+          "cost_per_task": 0.41,
+          "speed": 230,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 3,
       "name": "Google",
-      "model": "Gemini 4 Carbon",
-      "price_in": 2,
-      "price_out": 10,
-      "price_note": "from Google's pricing page; $4 / $20 from 1 Dec",
-      "index": 60,
-      "cost_per_task": null,
-      "speed": 82,
-      "arena_raw": 1527,
-      "arena_adjusted": 1516,
       "pricing_url": "https://ai.google.dev/gemini-api/docs/pricing",
-      "signup_url": "https://aistudio.google.com/apikey"
+      "signup_url": "https://aistudio.google.com/apikey",
+      "models": [
+        {
+          "name": "Gemini 4 Carbon",
+          "price_in": 2,
+          "price_out": 10,
+          "price_note": "from Google's pricing page; $4 / $20 from 1 Dec",
+          "index": 60,
+          "cost_per_task": 7.76,
+          "speed": 82,
+          "arena_raw": 1527,
+          "arena_adjusted": 1516
+        },
+        {
+          "name": "Gemini 4 Neon",
+          "price_in": 3,
+          "price_out": 15,
+          "price_note": "no price rise announced",
+          "index": 61,
+          "cost_per_task": 6.44,
+          "speed": 136,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Gemini 4 Hydrogen",
+          "price_in": 1.5,
+          "price_out": 7.5,
+          "price_note": "",
+          "index": 54,
+          "cost_per_task": 3.16,
+          "speed": 209,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Gemini 4 Argon",
+          "price_in": 2,
+          "price_out": 10,
+          "price_note": "$4 / $20 from 1 Dec",
+          "index": 50,
+          "cost_per_task": 9.95,
+          "speed": 99,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Gemini 3.8 Flash",
+          "price_in": 0.75,
+          "price_out": 3.75,
+          "price_note": "$1.50 / $7.50 from 1 Jan 2027",
+          "index": 31,
+          "cost_per_task": null,
+          "speed": 122,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Gemini 3.5 Flash-Lite",
+          "price_in": 0.3,
+          "price_out": 2.5,
+          "price_note": "",
+          "index": 12,
+          "cost_per_task": 0.69,
+          "speed": 409,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 4,
       "name": "DeepSeek",
-      "model": "V4.1 Flash 1017",
-      "price_in": 0.3,
-      "price_out": 1.2,
-      "price_note": "peak; half price off-peak",
-      "index": 33,
-      "cost_per_task": 0.6,
-      "speed": 169,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://api-docs.deepseek.com/quick_start/pricing/",
-      "signup_url": "https://platform.deepseek.com/sign_up"
+      "signup_url": "https://platform.deepseek.com/sign_up",
+      "models": [
+        {
+          "name": "V4.1 Flash 1017",
+          "price_in": 0.3,
+          "price_out": 1.2,
+          "price_note": "peak; half price off-peak",
+          "index": 33,
+          "cost_per_task": 0.6,
+          "speed": 169,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "V4 Pro 0813",
+          "price_in": 1.32,
+          "price_out": 3.96,
+          "price_note": "peak; half price off-peak",
+          "index": 23,
+          "cost_per_task": 1.77,
+          "speed": 70,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 5,
       "name": "Z.ai",
-      "model": "GLM-5.3",
-      "price_in": 1.4,
-      "price_out": 4.4,
-      "price_note": "",
-      "index": 32,
-      "cost_per_task": 5.01,
-      "speed": 98,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://docs.z.ai/guides/overview/pricing",
       "signup_url": "https://z.ai/model-api",
-      "label_below": true
+      "label_below": true,
+      "models": [
+        {
+          "name": "GLM-5.3",
+          "price_in": 1.4,
+          "price_out": 4.4,
+          "price_note": "",
+          "index": 32,
+          "cost_per_task": 5.01,
+          "speed": 98,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "GLM-5.3 Flash",
+          "price_in": 0.15,
+          "price_out": 0.5,
+          "price_note": "",
+          "index": 28,
+          "cost_per_task": 0.58,
+          "speed": 61,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 6,
       "name": "Alibaba (Qwen)",
-      "model": "Qwen4-Max",
-      "price_in": 1.5,
-      "price_out": 4.5,
-      "price_note": "",
-      "index": 43,
-      "cost_per_task": 3.27,
-      "speed": 59,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
-      "signup_url": "https://modelstudio.console.alibabacloud.com/"
+      "signup_url": "https://modelstudio.console.alibabacloud.com/",
+      "models": [
+        {
+          "name": "Qwen4-Max",
+          "price_in": 1.5,
+          "price_out": 4.5,
+          "price_note": "",
+          "index": 43,
+          "cost_per_task": 3.27,
+          "speed": 59,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Qwen3.8-Max 0902",
+          "price_in": 2,
+          "price_out": 6,
+          "price_note": "",
+          "index": 34,
+          "cost_per_task": null,
+          "speed": 43,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Qwen3.8-Flash-Next",
+          "price_in": null,
+          "price_out": null,
+          "price_note": "list price not found",
+          "index": 29,
+          "cost_per_task": 0.57,
+          "speed": null,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Qwen3.8 27B",
+          "price_in": 0.5,
+          "price_out": 3,
+          "price_note": "open weights",
+          "index": 20,
+          "cost_per_task": 3.53,
+          "speed": 61,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 7,
       "name": "Mistral",
-      "model": "Large 4",
-      "price_in": 0.7,
-      "price_out": 2.1,
-      "price_note": "docs figure; marketing page differs",
-      "index": 26,
-      "cost_per_task": 2.06,
-      "speed": null,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://mistral.ai/pricing/",
       "signup_url": "https://console.mistral.ai/",
-      "label_below": true
+      "label_below": true,
+      "models": [
+        {
+          "name": "Large 4",
+          "price_in": 0.7,
+          "price_out": 2.1,
+          "price_note": "docs figure; marketing page differs",
+          "index": 26,
+          "cost_per_task": 2.06,
+          "speed": null,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Small 4",
+          "price_in": 0.15,
+          "price_out": 0.6,
+          "price_note": "",
+          "index": 4,
+          "cost_per_task": 0.04,
+          "speed": null,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 8,
       "name": "Tencent",
-      "model": "Hy4",
-      "price_in": 0.83,
-      "price_out": 2.5,
-      "price_note": "",
-      "index": 35,
-      "cost_per_task": 1.03,
-      "speed": 100,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://www.tencentcloud.com/act/pro/tokenhub",
-      "signup_url": "https://www.tencentcloud.com/account/register"
+      "signup_url": "https://www.tencentcloud.com/account/register",
+      "models": [
+        {
+          "name": "Hy4",
+          "price_in": 0.83,
+          "price_out": 2.5,
+          "price_note": "",
+          "index": 35,
+          "cost_per_task": 1.03,
+          "speed": 100,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 9,
       "name": "Moonshot",
-      "model": "Kimi K3.1 Pro",
-      "price_in": 2,
-      "price_out": 10,
-      "price_note": "",
-      "index": 46,
-      "cost_per_task": 3.68,
-      "speed": 28,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://platform.kimi.ai/docs/pricing/chat",
-      "signup_url": "https://platform.kimi.ai/"
+      "signup_url": "https://platform.kimi.ai/",
+      "models": [
+        {
+          "name": "Kimi K3.1 Pro",
+          "price_in": 2,
+          "price_out": 10,
+          "price_note": "",
+          "index": 46,
+          "cost_per_task": 3.68,
+          "speed": 28,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": 10,
       "name": "MiniMax",
-      "model": "M3.1 Flash",
-      "price_in": 0.15,
-      "price_out": 0.6,
-      "price_note": "from MiniMax pricing page",
-      "index": 29,
-      "cost_per_task": 0.49,
-      "speed": 111,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://platform.minimax.io/docs/pricing/overview",
-      "signup_url": "https://platform.minimax.io/"
+      "signup_url": "https://platform.minimax.io/",
+      "models": [
+        {
+          "name": "M3.1 Flash",
+          "price_in": 0.15,
+          "price_out": 0.6,
+          "price_note": "from MiniMax pricing page",
+          "index": 29,
+          "cost_per_task": 0.49,
+          "speed": 111,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "M3",
+          "price_in": 0.3,
+          "price_out": 1.2,
+          "price_note": "up to 512K input; double above",
+          "index": 19,
+          "cost_per_task": 1.29,
+          "speed": 89,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": null,
       "name": "xAI",
-      "model": "Grok 4.7",
-      "price_in": 2,
-      "price_out": 6,
-      "price_note": "$4 / $12 above 200K",
-      "index": 35,
-      "cost_per_task": 7.77,
-      "speed": 70,
-      "arena_raw": null,
-      "arena_adjusted": null,
       "pricing_url": "https://docs.x.ai/developers/models",
-      "signup_url": "https://console.x.ai/"
+      "signup_url": "https://console.x.ai/",
+      "models": [
+        {
+          "name": "Grok 4.7",
+          "price_in": 2,
+          "price_out": 6,
+          "price_note": "$4 / $12 above 200K",
+          "index": 35,
+          "cost_per_task": 7.77,
+          "speed": 70,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     },
     {
       "rank": null,
       "name": "Meta",
-      "model": "Muse Wonder 1.0",
-      "price_in": 4,
-      "price_out": 20,
-      "price_note": "",
-      "index": 44,
-      "cost_per_task": null,
-      "speed": 130,
-      "arena_raw": 1511,
-      "arena_adjusted": 1500,
       "pricing_url": "https://dev.meta.ai/models/muse-wonder",
-      "signup_url": "https://dev.meta.ai/"
+      "signup_url": "https://dev.meta.ai/",
+      "models": [
+        {
+          "name": "Muse Wonder 1.0",
+          "price_in": 4,
+          "price_out": 20,
+          "price_note": "",
+          "index": 44,
+          "cost_per_task": 6.95,
+          "speed": 130,
+          "arena_raw": 1511,
+          "arena_adjusted": 1500
+        },
+        {
+          "name": "Muse Spark 1.3",
+          "price_in": 1.25,
+          "price_out": 4.25,
+          "price_note": "",
+          "index": 37,
+          "cost_per_task": null,
+          "speed": 132,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Muse Ember",
+          "price_in": 0.1,
+          "price_out": 0.5,
+          "price_note": "",
+          "index": 36,
+          "cost_per_task": 0.14,
+          "speed": 659,
+          "arena_raw": null,
+          "arena_adjusted": null
+        },
+        {
+          "name": "Muse Spark Open",
+          "price_in": 1.25,
+          "price_out": 4.25,
+          "price_note": "open weights; same price at five hosts",
+          "index": 25,
+          "cost_per_task": 2.02,
+          "speed": 201,
+          "arena_raw": null,
+          "arena_adjusted": null
+        }
+      ]
     }
   ],
   "share": [
@@ -236,64 +516,6 @@
       "last": true
     }
   ],
-  "cheaper_tiers": [
-    {
-      "provider": "Anthropic",
-      "model": "Claude Opus 5.5",
-      "price_in": 4,
-      "price_out": 20,
-      "index": 59,
-      "speed": 96
-    },
-    {
-      "provider": "OpenAI",
-      "model": "GPT-6.2 Sol",
-      "price_in": 2,
-      "price_out": 10,
-      "index": 57,
-      "speed": 94
-    },
-    {
-      "provider": "Anthropic",
-      "model": "Claude Sonnet 5.5",
-      "price_in": 2,
-      "price_out": 10,
-      "index": 55,
-      "speed": 131
-    },
-    {
-      "provider": "Google",
-      "model": "Gemini 4 Hydrogen",
-      "price_in": 1.5,
-      "price_out": 7.5,
-      "index": 54,
-      "speed": 209
-    },
-    {
-      "provider": "Anthropic",
-      "model": "Claude Haiku 5.5",
-      "price_in": 0.1,
-      "price_out": 0.5,
-      "index": 37,
-      "speed": 230
-    },
-    {
-      "provider": "OpenAI",
-      "model": "GPT-6 Luna",
-      "price_in": 0.1,
-      "price_out": 0.5,
-      "index": 28,
-      "speed": 119
-    },
-    {
-      "provider": "Z.ai",
-      "model": "GLM-5.3 Flash",
-      "price_in": 0.15,
-      "price_out": 0.5,
-      "index": 28,
-      "speed": 61
-    }
-  ],
   "affiliations": [
     {
       "source": "Artificial Analysis",
@@ -329,8 +551,11 @@
   "gaps": [
     "Mistral Large 4 price conflicts between Mistral's documentation and its marketing page; the documentation figure is used.",
     "Mistral Large 4 speed was not found.",
-    "Google and MiniMax prices are read from the vendors' own pricing pages; the other prices come from third-party trackers.",
-    "Google's Gemini 4 Neon ($3 / $15, index 61, no price rise announced) scores above Gemini 4 Carbon; once Carbon doubles to $4 / $20 on 1 Dec, Neon is both cheaper and higher-scored.",
+    "Gemini 4 Neon ($3 / $15, index 61) scores above the listed flagship Gemini 4 Carbon; once Carbon and Argon double to $4 / $20 on 1 Dec, Neon is both cheaper and higher-scored.",
+    "Only models with an Artificial Analysis score are listed. Left out for lack of one: Kimi K3 and K2.7 Code (Moonshot), Grok 4.3 and grok-build (xAI), GLM-5.3-FlashX (Z.ai), Ministral 3 (Mistral), and older generations of every provider. Tencent, Moonshot and xAI therefore show one model each.",
+    "Mistral Medium 3.5 (index 5) and Meta Muse Glimmer (index 6) are scored but have no list price on their vendors' pages, so they are left out. Qwen3.8-Flash-Next is listed without a price for the same reason.",
+    "Speed for the flagship rows comes from OpenRouter live traffic; for the added rows it comes from modelgrep, which republishes OpenRouter data. The two differ by a few tokens per second on the same model.",
+    "Meta prices come from OpenRouter listings (Meta's own page showed none); Anthropic and Moonshot prices come from third-party trackers.",
     "Gemini 3.8 Flash doubles to $1.50 / $7.50 on 1 Jan 2027. Google's batch tier is half the listed price.",
     "Meta's stronger Muse Wonder Full (index 50) is subscription-only, so the API row uses Muse Wonder 1.0.",
     "Tencent Hy4 input price varies by source ($0.83–$0.90); a $0.417 launch promotion may still be running.",
@@ -417,6 +642,34 @@
     {
       "label": "GPT-6.2 Astra vs Gemini 4 Carbon",
       "url": "https://alphacorp.ai/blog/gpt-6-2-astra-vs-gemini-4-carbon-benchmarks-pricing-and-which-is-better"
+    },
+    {
+      "label": "OpenAI API pricing",
+      "url": "https://developers.openai.com/api/docs/pricing"
+    },
+    {
+      "label": "DeepSeek pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing/"
+    },
+    {
+      "label": "Z.ai pricing",
+      "url": "https://docs.z.ai/guides/overview/pricing"
+    },
+    {
+      "label": "Alibaba Model Studio pricing",
+      "url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing"
+    },
+    {
+      "label": "Mistral API pricing",
+      "url": "https://docs.mistral.ai/inference/pricing"
+    },
+    {
+      "label": "xAI models and pricing",
+      "url": "https://docs.x.ai/developers/models"
+    },
+    {
+      "label": "OpenRouter Meta models",
+      "url": "https://openrouter.ai/meta"
     }
   ]
 }

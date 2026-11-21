@@ -190,7 +190,6 @@ mod tests {
             "meta",
             "providers",
             "share",
-            "cheaper_tiers",
             "affiliations",
             "gaps",
             "sources",
@@ -205,15 +204,26 @@ mod tests {
         for provider in providers {
             let name = provider["name"].as_str().expect("provider name");
 
-            assert!(provider["model"].is_string(), "{name}: model");
-            assert!(provider["index"].is_number(), "{name}: index");
-            assert!(provider["price_in"].is_number(), "{name}: price_in");
+            assert!(
+                provider["rank"].is_number() || provider["rank"].is_null(),
+                "{name}: rank must be a number or null"
+            );
 
-            for optional in ["rank", "price_out", "cost_per_task", "speed"] {
-                assert!(
-                    provider[optional].is_number() || provider[optional].is_null(),
-                    "{name}: {optional} must be a number or null"
-                );
+            let models = provider["models"].as_array().expect("provider models");
+
+            assert!(!models.is_empty(), "{name}: needs at least one model");
+
+            for model in models {
+                let model_name = model["name"].as_str().expect("model name");
+
+                assert!(model["index"].is_number(), "{name} {model_name}: index");
+
+                for optional in ["price_in", "price_out", "cost_per_task", "speed"] {
+                    assert!(
+                        model[optional].is_number() || model[optional].is_null(),
+                        "{name} {model_name}: {optional} must be a number or null"
+                    );
+                }
             }
 
             for link in ["pricing_url", "signup_url"] {
