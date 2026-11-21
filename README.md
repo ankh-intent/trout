@@ -2,6 +2,9 @@
 
 An OpenAI-compatible relay that cuts what a client on a metered link has to upload.
 
+Live relay: [trout.fly.dev](https://trout.fly.dev/). Its home page shows this document and how to connect;
+relaying through it needs its access key.
+
 An agent session re-sends its whole conversation on every model turn. trout runs on a server with an
 unmetered connection and lets the client talk to it cheaply:
 
@@ -303,7 +306,44 @@ From the test suite, against a scripted provider on loopback (debug build):
 | Same session through `/v1/responses` | 214 KB (96.4% less) |
 | Added delay to the first streamed byte | about 1 ms (proxy), about 3 ms (`/v1/responses`) |
 
-Not yet measured against a real provider or over a real network.
+### In use against a real provider
+
+From the dashboard of a relay on Fly.io carrying one client's agent traffic to MiniMax, 11 to 21 November
+2026 (read on the 21st, so that day is partial). Every request went through the plain relay with gzip;
+stored conversations were not used.
+
+| What | Result |
+|------|--------|
+| Requests proxied | 40,048 (66 failed, 0.16%) |
+| Upload the provider received | 19.1 GB |
+| Upload the client actually sent | 4.9 GB |
+| Upload saved | 14.2 GB (74.2%, 3.9x smaller) |
+| Download before compression | 187 MB |
+| Download the client actually received | 73.4 MB |
+| Download saved | 114 MB (60.8%, 2.5x smaller) |
+
+That is roughly 500 KB per request without the relay against roughly 130 KB with it. The saving held
+close to three quarters on every day:
+
+| Day (UTC) | Proxied | Failed | Uploaded | Without relay | Saved |
+|-----------|---------|--------|----------|---------------|-------|
+| 2026-11-21 | 3 | 3 | 726 KB | 3.2 MB | 2.5 MB |
+| 2026-11-20 | 2,657 | 1 | 386 MB | 1.5 GB | 1.1 GB |
+| 2026-11-19 | 5,016 | 6 | 455 MB | 1.6 GB | 1.2 GB |
+| 2026-11-18 | 6,872 | 23 | 784 MB | 2.9 GB | 2.2 GB |
+| 2026-11-17 | 4,839 | 4 | 514 MB | 1.9 GB | 1.4 GB |
+| 2026-11-16 | 3,049 | 7 | 453 MB | 1.7 GB | 1.3 GB |
+| 2026-11-15 | 4,846 | 7 | 616 MB | 2.3 GB | 1.7 GB |
+| 2026-11-14 | 3,823 | 1 | 572 MB | 2.1 GB | 1.5 GB |
+| 2026-11-13 | 4,985 | 6 | 601 MB | 2.4 GB | 1.8 GB |
+| 2026-11-12 | 2,219 | 1 | 360 MB | 1.3 GB | 1001 MB |
+| 2026-11-11 | 1,739 | 7 | 324 MB | 1.3 GB | 1.0 GB |
+
+Real traffic compresses less than the synthetic conversation above (3.9x against 11.6x). Most of what is
+uploaded is still the conversation re-sent each turn, which `/v1/responses` would avoid.
+
+Still not measured against a real provider: `/v1/responses` (stored conversations), and the delay the
+relay adds over a real network.
 
 ## Known gaps
 
