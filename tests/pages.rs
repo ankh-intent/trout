@@ -84,8 +84,27 @@ async fn home_page_signs_in_against_stats_and_opens_the_dashboard() {
     ] {
         assert!(html.contains(expected), "home page should contain `{expected}`");
     }
+}
 
-    for forbidden in ["http://", "https://"] {
+#[tokio::test]
+async fn home_page_shows_the_readme_and_how_to_connect() {
+    let app = TestApp::start(|_| {}).await;
+    let html = page(&app, "/").await;
+
+    for expected in [
+        "Connect a client to this relay",
+        "X-Trout-Target",
+        "/v1/chat/completions",
+        r#"href="https://github.com/ankh-intent/trout""#,
+        "<h2>Using it</h2>",
+        "<h2>Configuration</h2>",
+        "<table>",
+        r#"href="https://github.com/ankh-intent/trout/blob/master/fly.toml""#,
+    ] {
+        assert!(html.contains(expected), "home page should contain `{expected}`");
+    }
+
+    for forbidden in [r#"href="fly.toml""#, "<!--README-->", "<!--REPO-->"] {
         assert!(
             !html.contains(forbidden),
             "home page must not contain `{forbidden}`"

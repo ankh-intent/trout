@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::http::HeaderValue;
 use axum::http::header::{CACHE_CONTROL, CONTENT_SECURITY_POLICY, CONTENT_TYPE, X_CONTENT_TYPE_OPTIONS};
 use axum::response::Response;
+use pulldown_cmark::{Event, Options, Parser, Tag, html};
 
 use crate::error::{SOURCE_HEADER, SOURCE_RELAY};
 
@@ -21,6 +22,12 @@ const PAGE_POLICY: &str = "default-src 'none'; style-src 'unsafe-inline'; script
 const NAV_SLOT: &str = "<!--NAV-->";
 const NAV_CSS_SLOT: &str = "/*NAV_CSS*/";
 const DATA_SLOT: &str = "/*DATA*/";
+const README_SLOT: &str = "<!--README-->";
+const REPO_SLOT: &str = "<!--REPO-->";
+
+/// Where the source lives; the home page links to it and README links to files resolve against it.
+const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
+const REPOSITORY_BRANCH: &str = "master";
 
 /// Navigation items in display order: key, path, label.
 const NAV_ITEMS: [(&str, &str, &str); 3] = [
@@ -53,12 +60,18 @@ const NAV_CSS: &str = "
 ";
 
 const HOME_SOURCE: &str = include_str!("pages/home.html");
+/// Shown on the home page, so the project's documentation and the running relay cannot drift.
+const README: &str = include_str!("../README.md");
 const DASHBOARD_SOURCE: &str = include_str!("dashboard.html");
 const PROVIDERS_SOURCE: &str = include_str!("pages/providers.html");
 /// The figures behind the provider page. Updating the page is a change to this file alone.
 const PROVIDERS_DATA: &str = include_str!("pages/providers.json");
 
-static HOME: LazyLock<String> = LazyLock::new(|| with_nav(HOME_SOURCE, "home"));
+static HOME: LazyLock<String> = LazyLock::new(|| {
+    with_nav(HOME_SOURCE, "home")
+        .replace(REPO_SLOT, REPOSITORY)
+        .replace(README_SLOT, &readme_html(README))
+});
 static DASHBOARD: LazyLock<String> = LazyLock::new(|| with_nav(DASHBOARD_SOURCE, "dashboard"));
 static PROVIDERS: LazyLock<String> =
     LazyLock::new(|| with_nav(PROVIDERS_SOURCE, "providers").replace(DATA_SLOT, &embeddable(PROVIDERS_DATA)));
@@ -86,6 +99,44 @@ fn with_nav(source: &str, active: &str) -> String {
     source
         .replace(NAV_CSS_SLOT, NAV_CSS)
         .replace(NAV_SLOT, &nav(active))
+}
+
+/// A README link as it should work from the home page: links to files in the repository point at
+/// the repository, everything else is left alone.
+fn absolute_link(destination: &str) -> String {
+    if destination.starts_with('#') || destination.contains("://") || destination.starts_with("mailto:") {
+        return destination.to_string();
+    }
+
+    format!(
+        "{REPOSITORY}/blob/{REPOSITORY_BRANCH}/{}",
+        destination.trim_start_matches("./")
+    )
+}
+
+fn readme_html(markdown: &str) -> String {
+    let events =
+        Parser::new_ext(markdown, Options::ENABLE_TABLES | Options::ENABLE_STRIKETHROUGH).map(|event| {
+            match event {
+                Event::Start(Tag::Link {
+                    link_type,
+                    dest_url,
+                    title,
+                    id,
+                }) => Event::Start(Tag::Link {
+                    link_type,
+                    dest_url: absolute_link(&dest_url).into(),
+                    title,
+                    id,
+                }),
+                other => other,
+            }
+        });
+    let mut out = String::new();
+
+    html::push_html(&mut out, events);
+
+    out
 }
 
 /// JSON made safe to sit inside a `<script>` element: compact, and with no `<` that could close
@@ -181,10 +232,36 @@ mod tests {
         for page in [HOME.as_str(), DASHBOARD.as_str(), PROVIDERS.as_str()] {
             assert!(page.contains(r#"<nav class="topnav""#));
 
-            for slot in [NAV_SLOT, NAV_CSS_SLOT, DATA_SLOT] {
+            for slot in [NAV_SLOT, NAV_CSS_SLOT, DATA_SLOT, README_SLOT, REPO_SLOT] {
                 assert!(!page.contains(slot), "`{slot}` was left in a page");
             }
         }
+    }
+
+    #[test]
+    fn readme_is_rendered_with_links_into_the_repository() {
+        let html = readme_html(
+            "# Title\n\nSee [`fly.toml`](fly.toml), [docs](./deploy/x.toml), [site](https://example.com) and [top](#title).\n\n| A | B |\n|---|---|\n| 1 | 2 |\n",
+        );
+
+        assert!(html.contains("<h1>Title</h1>"));
+        assert!(html.contains("<table>"));
+        assert!(html.contains(&format!(
+            r#"href="{REPOSITORY}/blob/{REPOSITORY_BRANCH}/fly.toml""#
+        )));
+        assert!(html.contains(&format!(
+            r#"href="{REPOSITORY}/blob/{REPOSITORY_BRANCH}/deploy/x.toml""#
+        )));
+        assert!(html.contains(r#"href="https://example.com""#));
+        assert!(html.contains(r##"href="#title""##));
+    }
+
+    #[test]
+    fn home_page_shows_the_readme() {
+        assert!(REPOSITORY.starts_with("https://"));
+        assert!(HOME.contains("<h2>Using it</h2>"));
+        assert!(HOME.contains(&format!(r#"href="{REPOSITORY}""#)));
+        assert!(!HOME.contains(r#"href="fly.toml""#));
     }
 
     #[test]

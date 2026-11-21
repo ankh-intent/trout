@@ -9,23 +9,25 @@
   :root {
     color-scheme: light dark;
     --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #6b7480; --line: #e2e5ea;
-    --accent: #1f7a5c; --on-accent: #ffffff; --warn: #b4472f;
+    --accent: #1f7a5c; --on-accent: #ffffff; --warn: #b4472f; --code: #eef0f3;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #14171a; --card: #1d2125; --text: #e8eaed; --muted: #98a1ab; --line: #2c3238;
-      --accent: #4cc59a; --on-accent: #10231c; --warn: #f08a70;
+      --accent: #4cc59a; --on-accent: #10231c; --warn: #f08a70; --code: #262b30;
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font: 15px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
   }
-  main { max-width: 440px; margin: 0 auto; }
-  h1 { font-size: 28px; margin: 48px 0 4px; letter-spacing: 0.02em; }
-  .lead { color: var(--muted); margin: 0 0 28px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  main { max-width: 920px; margin: 0 auto; }
+  a { color: var(--accent); }
+  .top { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+  .card h2 { font-size: 16px; margin: 0 0 10px; }
+  .card p { margin: 0 0 10px; }
   label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
   button, input {
     font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
@@ -41,36 +43,88 @@
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   #login .primary { width: 100%; }
   #error { color: var(--warn); margin: 12px 0 0; min-height: 1.4em; }
-  .hint { color: var(--muted); font-size: 13px; margin: 16px 0 0; }
+  .hint { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+  dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 14px; margin: 0 0 12px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  code, pre { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code { background: var(--code); border-radius: 4px; padding: 1px 5px; }
+  pre { background: var(--code); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0 0 12px; }
+  pre code { background: none; padding: 0; }
+  .docs-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 32px 0 8px; }
+  .docs-head h2 { font-size: 13px; margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .docs-head .spacer { flex: 1; }
+  .readme { padding: 8px 28px 20px; }
+  .readme h1 { font-size: 28px; margin: 20px 0 8px; letter-spacing: 0.02em; }
+  .readme h2 { font-size: 20px; margin: 32px 0 10px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .readme h3 { font-size: 16px; margin: 24px 0 8px; }
+  .readme p, .readme ul, .readme ol { margin: 0 0 12px; }
+  .readme li { margin-bottom: 4px; }
+  .readme li > pre, .readme li > p { margin-top: 8px; }
+  .readme table { display: block; overflow-x: auto; border-collapse: collapse; margin: 0 0 14px; }
+  .readme th, .readme td { text-align: left; padding: 6px 12px; border: 1px solid var(--line); vertical-align: top; }
+  .readme th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .readme td:first-child code { white-space: nowrap; }
   [hidden] { display: none !important; }
+  @media (max-width: 760px) {
+    .top { grid-template-columns: minmax(0, 1fr); }
+    .top .signin { order: -1; }
+    .readme { padding: 4px 16px 16px; }
+  }
 /*NAV_CSS*/
 </style>
 </head>
 <body>
 <!--NAV-->
 <main>
-  <h1>trout</h1>
-  <p class="lead">An OpenAI-compatible relay for metered client links.</p>
+  <div class="top">
+    <section class="card" aria-labelledby="connect-title">
+      <h2 id="connect-title">Connect a client to this relay</h2>
+      <p>Point the client's OpenAI-compatible base URL here and add two headers. The provider key stays in <code>Authorization</code> and is passed through untouched.</p>
+      <dl>
+        <dt>Base URL</dt>
+        <dd><code><span class="origin">https://&lt;this-relay&gt;</span>/v1</code></dd>
+        <dt><code>X-Trout-Key</code></dt>
+        <dd>This relay's access key.</dd>
+        <dt><code>X-Trout-Target</code></dt>
+        <dd>Your provider's base URL with its version prefix, e.g. <code>https://api.example.com/v1</code>.</dd>
+      </dl>
+      <pre><code>curl -s <span class="origin">https://&lt;this-relay&gt;</span>/v1/chat/completions \
+  -H "X-Trout-Key: $TROUT_KEY" -H "X-Trout-Target: $TARGET" \
+  -H "Authorization: Bearer $API_KEY" -H 'Content-Type: application/json' \
+  -d "{\"model\":\"$MODEL\",\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}"</code></pre>
+      <p class="hint">Compression and stored conversations are described under “Using it” below; the examples there are filled in with this relay's address.</p>
+    </section>
 
-  <div class="card">
-    <form id="login" hidden>
-      <label for="key">Access key</label>
-      <input id="key" type="password" autocomplete="off" placeholder="X-Trout-Key" required>
-      <button class="primary" id="submit" type="submit">Sign in</button>
-    </form>
+    <section class="card signin" aria-labelledby="signin-title">
+      <h2 id="signin-title">Dashboard</h2>
+      <form id="login" hidden>
+        <label for="key">Access key</label>
+        <input id="key" type="password" autocomplete="off" placeholder="X-Trout-Key" required>
+        <button class="primary" id="submit" type="submit">Sign in</button>
+      </form>
 
-    <div id="signed-in" hidden>
-      <p style="margin-top: 0">You are signed in on this tab.</p>
-      <div class="row">
-        <a class="primary" href="/dashboard">Open dashboard</a>
-        <button id="logout" type="button">Sign out</button>
+      <div id="signed-in" hidden>
+        <p>You are signed in on this tab.</p>
+        <div class="row">
+          <a class="primary" href="/dashboard">Open dashboard</a>
+          <button id="logout" type="button">Sign out</button>
+        </div>
       </div>
-    </div>
 
-    <div id="error" role="alert"></div>
+      <div id="error" role="alert"></div>
+      <p class="hint">The key is checked against this relay and kept only in this browser tab.</p>
+    </section>
   </div>
 
-  <p class="hint">The key is checked against this relay and kept only in this browser tab. It is the same key clients send as X-Trout-Key.</p>
+  <div class="docs-head">
+    <h2>Documentation</h2>
+    <span class="spacer"></span>
+    <a id="repo" href="<!--REPO-->" rel="noopener">Source on GitHub</a>
+  </div>
+  <article class="card readme">
+<!--README-->
+  </article>
 </main>
 
 <script>
@@ -79,17 +133,31 @@
 const KEY_STORAGE = 'trout-key';
 const NOTICE_STORAGE = 'trout-notice';
 const DASHBOARD = '/dashboard';
+// The README's examples use this placeholder address; here they show the relay being read.
+const EXAMPLE_ORIGIN = 'https://trout.example.com';
 const $ = (id) => document.getElementById(id);
+
+const fillOrigin = () => {
+  for (const node of document.querySelectorAll('.origin')) {
+    node.textContent = location.origin;
+  }
+
+  const walker = document.createTreeWalker(document.querySelector('.readme'), NodeFilter.SHOW_TEXT);
+
+  while (walker.nextNode()) {
+    const text = walker.currentNode;
+
+    if (text.nodeValue.includes(EXAMPLE_ORIGIN) && text.parentElement.closest('code')) {
+      text.nodeValue = text.nodeValue.replaceAll(EXAMPLE_ORIGIN, location.origin);
+    }
+  }
+};
 
 const show = () => {
   const signedIn = Boolean(sessionStorage.getItem(KEY_STORAGE));
 
   $('login').hidden = signedIn;
   $('signed-in').hidden = !signedIn;
-
-  if (!signedIn) {
-    $('key').focus();
-  }
 };
 
 $('login').addEventListener('submit', async (event) => {
@@ -139,6 +207,7 @@ if (notice) {
   $('error').textContent = notice;
 }
 
+fillOrigin();
 show();
 </script>
 </body>

@@ -8,7 +8,8 @@ RUN apk add --no-cache build-base
 
 WORKDIR /src
 
-COPY Cargo.toml Cargo.lock rustfmt.toml ./
+# README.md is rendered into the home page at build time.
+COPY Cargo.toml Cargo.lock rustfmt.toml README.md ./
 COPY src ./src
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
