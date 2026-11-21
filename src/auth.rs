@@ -7,15 +7,18 @@ use subtle::ConstantTimeEq;
 
 use crate::AppState;
 use crate::error::RelayError;
+use crate::pages::{DASHBOARD_PATH, HOME_PATH, PROVIDERS_PATH};
 
 pub const KEY_HEADER: &str = "x-trout-key";
 pub const HEALTH_PATH: &str = "/healthz";
-/// The dashboard page is static and holds no data; the figures it shows come from `/stats`,
-/// which needs the key like everything else.
-pub const DASHBOARD_PATH: &str = "/dashboard";
 
 pub async fn require_key(State(state): State<Arc<AppState>>, request: Request, next: Next) -> Response {
-    if matches!(request.uri().path(), HEALTH_PATH | DASHBOARD_PATH) {
+    // The pages are static and hold no relay data; the figures the dashboard shows come from
+    // `/stats`, which needs the key like everything else.
+    if matches!(
+        request.uri().path(),
+        HEALTH_PATH | HOME_PATH | DASHBOARD_PATH | PROVIDERS_PATH
+    ) {
         return next.run(request).await;
     }
 

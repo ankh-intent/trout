@@ -1,0 +1,408 @@
+{
+  "meta": {
+    "collected": "15–21 November 2026",
+    "share_period": "week of 9 Nov 2026",
+    "disclosure": "This report was compiled by Claude, an Anthropic model. Check the Anthropic row against the sources yourself. Performance figures come only from third-party measurers, never from vendor claims. Prices come from third-party trackers and news, not verified on vendor pricing pages.",
+    "ranking_note": "Places 1–2 follow gateway and business-spend data; 3–8 follow OpenRouter request share; 9–10 follow OpenRouter weekly token volume and are weakly determined. Providers without a place are commonly compared but did not make the top 10 by measured usage.",
+    "affiliation_note": "The −11 Elo on Arena scores is a rough correction using the effect size Arena itself concedes; the authors of the critique argue the true effect is larger."
+  },
+  "providers": [
+    {
+      "rank": 1,
+      "name": "OpenAI",
+      "model": "GPT-6.2 Astra",
+      "price_in": 8,
+      "price_out": 40,
+      "price_note": "",
+      "index": 62,
+      "cost_per_task": 4.0,
+      "speed": 79,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://openai.com/api/pricing/",
+      "signup_url": "https://platform.openai.com/signup",
+      "label_below": true
+    },
+    {
+      "rank": 2,
+      "name": "Anthropic",
+      "model": "Claude Fable 5.2",
+      "price_in": 8,
+      "price_out": 40,
+      "price_note": "",
+      "index": 65,
+      "cost_per_task": 26.54,
+      "speed": 87,
+      "arena_raw": 1503,
+      "arena_adjusted": 1503,
+      "pricing_url": "https://claude.com/pricing",
+      "signup_url": "https://platform.claude.com/"
+    },
+    {
+      "rank": 3,
+      "name": "Google",
+      "model": "Gemini 4 Carbon",
+      "price_in": 2,
+      "price_out": 10,
+      "price_note": "$4 / $20 from 1 Dec",
+      "index": 60,
+      "cost_per_task": null,
+      "speed": 82,
+      "arena_raw": 1527,
+      "arena_adjusted": 1516,
+      "pricing_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "signup_url": "https://aistudio.google.com/apikey"
+    },
+    {
+      "rank": 4,
+      "name": "DeepSeek",
+      "model": "V4.1 Flash 1017",
+      "price_in": 0.3,
+      "price_out": 1.2,
+      "price_note": "peak; half price off-peak",
+      "index": 33,
+      "cost_per_task": 0.6,
+      "speed": 169,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://api-docs.deepseek.com/quick_start/pricing/",
+      "signup_url": "https://platform.deepseek.com/sign_up"
+    },
+    {
+      "rank": 5,
+      "name": "Z.ai",
+      "model": "GLM-5.3",
+      "price_in": 1.4,
+      "price_out": 4.4,
+      "price_note": "",
+      "index": 32,
+      "cost_per_task": 5.01,
+      "speed": 98,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://docs.z.ai/guides/overview/pricing",
+      "signup_url": "https://z.ai/model-api",
+      "label_below": true
+    },
+    {
+      "rank": 6,
+      "name": "Alibaba (Qwen)",
+      "model": "Qwen4-Max",
+      "price_in": 1.5,
+      "price_out": 4.5,
+      "price_note": "",
+      "index": 43,
+      "cost_per_task": 3.27,
+      "speed": 59,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+      "signup_url": "https://modelstudio.console.alibabacloud.com/"
+    },
+    {
+      "rank": 7,
+      "name": "Mistral",
+      "model": "Large 4",
+      "price_in": 0.7,
+      "price_out": 2.1,
+      "price_note": "docs figure; marketing page differs",
+      "index": 26,
+      "cost_per_task": 2.06,
+      "speed": null,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://mistral.ai/pricing/",
+      "signup_url": "https://console.mistral.ai/",
+      "label_below": true
+    },
+    {
+      "rank": 8,
+      "name": "Tencent",
+      "model": "Hy4",
+      "price_in": 0.83,
+      "price_out": 2.5,
+      "price_note": "",
+      "index": 35,
+      "cost_per_task": 1.03,
+      "speed": 100,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://www.tencentcloud.com/act/pro/tokenhub",
+      "signup_url": "https://www.tencentcloud.com/account/register"
+    },
+    {
+      "rank": 9,
+      "name": "Moonshot",
+      "model": "Kimi K3.1 Pro",
+      "price_in": 2,
+      "price_out": 10,
+      "price_note": "",
+      "index": 46,
+      "cost_per_task": 3.68,
+      "speed": 28,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://platform.kimi.ai/docs/pricing/chat",
+      "signup_url": "https://platform.kimi.ai/"
+    },
+    {
+      "rank": 10,
+      "name": "MiniMax",
+      "model": "M3.1 Flash",
+      "price_in": 0.15,
+      "price_out": 0.6,
+      "price_note": "from MiniMax pricing page",
+      "index": 29,
+      "cost_per_task": 0.49,
+      "speed": 111,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://platform.minimax.io/docs/pricing/overview",
+      "signup_url": "https://platform.minimax.io/"
+    },
+    {
+      "rank": null,
+      "name": "xAI",
+      "model": "Grok 4.7",
+      "price_in": 2,
+      "price_out": 6,
+      "price_note": "$4 / $12 above 200K",
+      "index": 35,
+      "cost_per_task": 7.77,
+      "speed": 70,
+      "arena_raw": null,
+      "arena_adjusted": null,
+      "pricing_url": "https://docs.x.ai/developers/models",
+      "signup_url": "https://console.x.ai/"
+    },
+    {
+      "rank": null,
+      "name": "Meta",
+      "model": "Muse Wonder 1.0",
+      "price_in": 4,
+      "price_out": 20,
+      "price_note": "",
+      "index": 44,
+      "cost_per_task": null,
+      "speed": 130,
+      "arena_raw": 1511,
+      "arena_adjusted": 1500,
+      "pricing_url": "https://dev.meta.ai/models/muse-wonder",
+      "signup_url": "https://dev.meta.ai/"
+    }
+  ],
+  "share": [
+    {
+      "name": "DeepSeek",
+      "value": 31.8
+    },
+    {
+      "name": "OpenAI",
+      "value": 19.0
+    },
+    {
+      "name": "Google",
+      "value": 15.1
+    },
+    {
+      "name": "Z.ai",
+      "value": 7.0
+    },
+    {
+      "name": "Anthropic",
+      "value": 6.3
+    },
+    {
+      "name": "Qwen",
+      "value": 6.2
+    },
+    {
+      "name": "Mistral",
+      "value": 2.6
+    },
+    {
+      "name": "Tencent",
+      "value": 2.3
+    },
+    {
+      "name": "Nvidia",
+      "value": 1.6,
+      "soft": true
+    },
+    {
+      "name": "All others",
+      "value": 8.2,
+      "soft": true,
+      "last": true
+    }
+  ],
+  "cheaper_tiers": [
+    {
+      "provider": "Anthropic",
+      "model": "Claude Opus 5.5",
+      "price_in": 4,
+      "price_out": 20,
+      "index": 59,
+      "speed": 96
+    },
+    {
+      "provider": "OpenAI",
+      "model": "GPT-6.2 Sol",
+      "price_in": 2,
+      "price_out": 10,
+      "index": 57,
+      "speed": 94
+    },
+    {
+      "provider": "Anthropic",
+      "model": "Claude Sonnet 5.5",
+      "price_in": 2,
+      "price_out": 10,
+      "index": 55,
+      "speed": 131
+    },
+    {
+      "provider": "Anthropic",
+      "model": "Claude Haiku 5.5",
+      "price_in": 0.1,
+      "price_out": 0.5,
+      "index": 37,
+      "speed": 230
+    },
+    {
+      "provider": "OpenAI",
+      "model": "GPT-6 Luna",
+      "price_in": 0.1,
+      "price_out": 0.5,
+      "index": 28,
+      "speed": 119
+    },
+    {
+      "provider": "Z.ai",
+      "model": "GLM-5.3 Flash",
+      "price_in": 0.15,
+      "price_out": 0.5,
+      "index": 28,
+      "speed": 61
+    }
+  ],
+  "affiliations": [
+    {
+      "source": "Artificial Analysis",
+      "affiliation": "Backed by Nat Friedman, Daniel Gross and Andrew Ng. Sells private benchmarking to the labs it ranks. No lab equity found.",
+      "adjustment": "None; used as the primary score."
+    },
+    {
+      "source": "OpenRouter",
+      "affiliation": "Investors include a16z, Menlo Ventures (an Anthropic backer), CapitalG (Alphabet) and Nvidia. Users skew price-sensitive.",
+      "adjustment": "Speed kept (measured traffic). Share used for ranking only; Nvidia dropped."
+    },
+    {
+      "source": "Arena (LMArena)",
+      "affiliation": "VC-funded; sells evaluations to ranked labs. The \"Leaderboard Illusion\" paper found private variant testing favoured Google, OpenAI and Meta.",
+      "adjustment": "−11 Elo for the Google and Meta rows. Order unchanged."
+    },
+    {
+      "source": "Menlo Ventures report",
+      "affiliation": "Led Anthropic's Series D with $500M+; also holds OpenRouter. Survey-based estimate.",
+      "adjustment": "Its \"Anthropic 55% of enterprise spend\" figure dropped entirely."
+    },
+    {
+      "source": "Respan, Ramp",
+      "affiliation": "A gateway vendor and a spend-card vendor; each sees only its own customers.",
+      "adjustment": "Used only to confirm OpenAI and Anthropic lead paid usage."
+    },
+    {
+      "source": "modelgrep, BenchLeader",
+      "affiliation": "modelgrep is anonymous with referral links to a sister API; BenchLeader ownership not checked. Both republish Artificial Analysis and OpenRouter data.",
+      "adjustment": "Used as mirrors; index values cross-checked against the Artificial Analysis page (within 1 point)."
+    }
+  ],
+  "gaps": [
+    "Mistral Large 4 price conflicts between Mistral's documentation and its marketing page; the documentation figure is used.",
+    "Mistral Large 4 speed was not found.",
+    "MiniMax price is read from MiniMax's own pricing page; the other prices come from third-party trackers.",
+    "Meta's stronger Muse Wonder Full (index 50) is subscription-only, so the API row uses Muse Wonder 1.0.",
+    "Tencent Hy4 input price varies by source ($0.83–$0.90); a $0.417 launch promotion may still be running.",
+    "Arena's page exposed only its top 15 models, so most providers have no Arena score.",
+    "Nvidia (1.6% of OpenRouter requests) is excluded: its share comes from a free model and Nvidia is an OpenRouter investor."
+  ],
+  "sources": [
+    {
+      "label": "OpenRouter rankings",
+      "url": "https://openrouter.ai/rankings"
+    },
+    {
+      "label": "MiniMax pricing",
+      "url": "https://platform.minimax.io/docs/pricing/overview"
+    },
+    {
+      "label": "Artificial Analysis leaderboard",
+      "url": "https://artificialanalysis.ai/leaderboards/models"
+    },
+    {
+      "label": "modelgrep leaderboard",
+      "url": "https://modelgrep.com/leaderboard"
+    },
+    {
+      "label": "Arena text leaderboard",
+      "url": "https://arena.ai/leaderboard/text"
+    },
+    {
+      "label": "BenchLeader speed",
+      "url": "https://www.benchleader.com/leaderboards/speed"
+    },
+    {
+      "label": "LLM API pricing, November 2026",
+      "url": "https://iotdigitaltwinplm.com/llm-api-pricing-november-2026-gpt-claude-gemini-grok-deepseek-mistral/"
+    },
+    {
+      "label": "Respan market share",
+      "url": "https://www.respan.ai/articles/llm-market-share"
+    },
+    {
+      "label": "Menlo 2026 State of Enterprise AI",
+      "url": "https://menlovc.com/perspective/2026-the-state-of-enterprise-ai/"
+    },
+    {
+      "label": "The Leaderboard Illusion",
+      "url": "https://arxiv.org/html/2504.20879"
+    },
+    {
+      "label": "Arena valuation and investors",
+      "url": "https://www.trendingtopics.eu/arena-3-billion-valuation/"
+    },
+    {
+      "label": "OpenRouter Series A press release",
+      "url": "https://www.globenewswire.com/news-release/2025/06/25/3105125/0/en/OpenRouter-raises-40-million-to-scale-up-multi-model-inference-for-enterprise.html"
+    },
+    {
+      "label": "OpenRouter Series B",
+      "url": "https://news.cocoloop.cn/en/2026/05/openrouter-series-b-113m/"
+    },
+    {
+      "label": "Artificial Analysis profile",
+      "url": "https://www.fullduplex.ai/blog/v14-artificial-analysis"
+    },
+    {
+      "label": "Tencent Hy4 pricing",
+      "url": "https://www.eesel.ai/blog/tencent-hy4-pricing"
+    },
+    {
+      "label": "Tencent TokenHub",
+      "url": "https://www.tencentcloud.com/act/pro/tokenhub"
+    },
+    {
+      "label": "Qwen4-Max pricing",
+      "url": "https://www.mercatus-ai.com/blog/qwen-4-max-api-pricing"
+    },
+    {
+      "label": "GPT-6.2 Astra launch, VentureBeat",
+      "url": "https://venturebeat.com/technology/essentially-unusable-openai-launches-gpt-6-2-astra-and-sol-to-negative-reception-from-ai-power-users"
+    },
+    {
+      "label": "GPT-6.2 Astra vs Gemini 4 Carbon",
+      "url": "https://alphacorp.ai/blog/gpt-6-2-astra-vs-gemini-4-carbon-benchmarks-pricing-and-which-is-better"
+    }
+  ]
+}

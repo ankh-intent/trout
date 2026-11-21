@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>trout</title>
+<title>Dashboard · trout</title>
 <style>
   :root {
     color-scheme: light dark;
@@ -34,8 +34,6 @@
   }
   button { cursor: pointer; }
   button:hover { border-color: var(--accent); }
-  #login { display: flex; gap: 8px; flex-wrap: wrap; margin: 40px 0; }
-  #login input { flex: 1; min-width: 220px; }
   #error { color: var(--warn); margin: 12px 0; min-height: 1.4em; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
@@ -60,22 +58,20 @@
   th:first-child, td:first-child { text-align: left; }
   .empty { color: var(--muted); padding: 24px; text-align: center; }
   [hidden] { display: none !important; }
+/*NAV_CSS*/
 </style>
 </head>
 <body>
+<!--NAV-->
 <main>
   <header>
-    <h1>trout</h1>
+    <h1>Dashboard</h1>
     <span class="meta" id="meta"></span>
     <span class="spacer"></span>
     <button id="refresh" hidden>Refresh</button>
-    <button id="logout" hidden>Forget key</button>
+    <button id="logout" hidden>Sign out</button>
   </header>
 
-  <form id="login" hidden>
-    <input id="key" type="password" autocomplete="off" placeholder="Access key (X-Trout-Key)" aria-label="Access key">
-    <button type="submit">Show statistics</button>
-  </form>
   <div id="error" role="alert"></div>
 
   <div id="content" hidden>
@@ -132,6 +128,9 @@
 'use strict';
 
 const KEY_STORAGE = 'trout-key';
+// Signing in happens on the home page; a message left here is shown there once.
+const NOTICE_STORAGE = 'trout-notice';
+const HOME = '/';
 // Polling starts fast, doubles its wait each time nothing changed, and starts over when the
 // figures change or the tab regains focus. A hidden tab does not poll at all.
 const POLL_MIN_MS = 5000;
@@ -289,7 +288,6 @@ const render = (stats) => {
 };
 
 const show = (signedIn) => {
-  $('login').hidden = signedIn;
   $('content').hidden = !signedIn;
   $('refresh').hidden = !signedIn;
   $('logout').hidden = !signedIn;
@@ -326,9 +324,12 @@ const signOut = (message) => {
   resetBackoff();
   lastSnapshot = null;
   lastStats = null;
-  renderMeta();
-  show(false);
-  $('error').textContent = message;
+
+  if (message) {
+    sessionStorage.setItem(NOTICE_STORAGE, message);
+  }
+
+  location.replace(HOME);
 };
 
 // `restart` is set when the check was asked for (focus, Refresh): the wait then starts over at
@@ -337,7 +338,7 @@ const load = async (restart = false) => {
   const key = sessionStorage.getItem(KEY_STORAGE);
 
   if (!key) {
-    show(false);
+    location.replace(HOME);
 
     return;
   }
@@ -401,18 +402,6 @@ const load = async (restart = false) => {
 const refreshNow = () => {
   load(true);
 };
-
-$('login').addEventListener('submit', (event) => {
-  event.preventDefault();
-
-  const key = $('key').value.trim();
-
-  if (key) {
-    sessionStorage.setItem(KEY_STORAGE, key);
-    $('key').value = '';
-    load();
-  }
-});
 
 $('refresh').addEventListener('click', refreshNow);
 

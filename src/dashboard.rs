@@ -4,7 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::HeaderValue;
-use axum::http::header::{CACHE_CONTROL, CONTENT_SECURITY_POLICY, CONTENT_TYPE, X_CONTENT_TYPE_OPTIONS};
+use axum::http::header::{CACHE_CONTROL, CONTENT_TYPE};
 use axum::response::Response;
 use serde_json::{Value, json};
 
@@ -14,27 +14,6 @@ use crate::store::stats::Traffic;
 
 /// Days of history shown.
 const DAYS: u32 = 30;
-
-const PAGE: &str = include_str!("dashboard.html");
-
-/// The page loads nothing from anywhere else and may only call back to this origin.
-const PAGE_POLICY: &str = "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; \
-                           connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
-
-/// `GET /dashboard`: one static, self-contained page. It carries no data; it asks for the access
-/// key and reads `/stats` with it.
-pub async fn page() -> Response {
-    let mut response = Response::new(Body::from(PAGE));
-    let headers = response.headers_mut();
-
-    headers.insert(CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8"));
-    headers.insert(CONTENT_SECURITY_POLICY, HeaderValue::from_static(PAGE_POLICY));
-    headers.insert(X_CONTENT_TYPE_OPTIONS, HeaderValue::from_static("nosniff"));
-    headers.insert(CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    headers.insert(SOURCE_HEADER, HeaderValue::from_static(SOURCE_RELAY));
-
-    response
-}
 
 fn with_savings(traffic: &Traffic) -> Value {
     let mut value = serde_json::to_value(traffic).unwrap_or_else(|_| json!({}));

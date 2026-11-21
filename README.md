@@ -100,12 +100,16 @@ Other routes:
 | `DELETE /v1/responses/{id}` | Removes the answer and everything continued from it. |
 | `DELETE /v1/conversations/{id}` | Removes the whole conversation (`conversation.id` is on every answer). |
 | `GET /healthz` | `{"status":"ok"}`, no key needed. |
+| `GET /` | Home page with the sign-in form (see below). Needs no key. |
 | `GET /dashboard` | Statistics page (see below). The page itself needs no key. |
+| `GET /providers` | LLM provider comparison page (see below). Needs no key. |
 | `GET /stats` | The figures behind the page, as JSON. Needs the key. |
 
 ### Dashboard
 
-Open `https://<your-relay>/dashboard` in a browser and enter the access key. It shows:
+Open `https://<your-relay>/` in a browser and sign in with the access key; the home page checks the key
+against `/stats` and opens `/dashboard`. Opening `/dashboard` without signing in sends you back to the
+home page. Every page carries the same top navigation bar. The dashboard shows:
 
 - **Upload saved** and **download saved**: what the provider received against what the client actually
   sent, and the answer size before compression against what the client actually received.
@@ -114,8 +118,8 @@ Open `https://<your-relay>/dashboard` in a browser and enter the access key. It 
 - A per-day upload chart and table for the last 30 days that saw traffic (UTC days).
 
 The page is one self-contained file: plain HTML, CSS and JavaScript, nothing loaded from anywhere else.
-It holds no data itself; it reads `/stats` with the key you type, which is kept only in that browser
-tab's session storage. Figures are counts and sizes only, never content.
+It holds no data itself; it reads `/stats` with the key you signed in with, which is kept only in that
+browser tab's session storage. Figures are counts and sizes only, never content.
 
 Statistics are kept in the store file, so they survive restarts. Byte figures count only requests that
 reached a provider; requests the relay rejected are counted as failures and nothing else.
@@ -124,6 +128,19 @@ The page polls `/stats` while its tab is visible: every 5 seconds at first, doub
 the figures have not changed, up to 5 minutes. A change in the figures, the Refresh button, or the
 window or tab regaining focus starts it again at 5 seconds. A hidden tab does not poll, so on Fly.io a
 forgotten background tab does not keep the machine awake; a visible one does wake it on each check.
+
+### LLM providers page
+
+`/providers` is a comparison of LLM API providers: prices, independent benchmark scores, measured speed
+and an interactive ranking between low price and high intelligence. It is public and static, like the
+other pages, and loads nothing from anywhere else.
+
+All of its figures and text come from [`src/pages/providers.json`](src/pages/providers.json), which is
+compiled into the binary. To publish new data, edit that file, commit and deploy; the page itself does
+not change. `cargo test --lib pages` checks the file parses and every provider has the fields the page
+needs. Fields a source did not give (`price_out`, `cost_per_task`, `speed`, `rank`) are `null`.
+
+To add a page to the navigation bar, add it to `NAV_ITEMS` in [`src/pages.rs`](src/pages.rs).
 
 ### Errors
 

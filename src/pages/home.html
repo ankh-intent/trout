@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>trout</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #6b7480; --line: #e2e5ea;
+    --accent: #1f7a5c; --on-accent: #ffffff; --warn: #b4472f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171a; --card: #1d2125; --text: #e8eaed; --muted: #98a1ab; --line: #2c3238;
+      --accent: #4cc59a; --on-accent: #10231c; --warn: #f08a70;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  main { max-width: 440px; margin: 0 auto; }
+  h1 { font-size: 28px; margin: 48px 0 4px; letter-spacing: 0.02em; }
+  .lead { color: var(--muted); margin: 0 0 28px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  button, input {
+    font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line);
+    border-radius: 6px; padding: 8px 10px;
+  }
+  input { width: 100%; margin-bottom: 12px; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+  a.primary { display: inline-block; text-decoration: none; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 10px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  #login .primary { width: 100%; }
+  #error { color: var(--warn); margin: 12px 0 0; min-height: 1.4em; }
+  .hint { color: var(--muted); font-size: 13px; margin: 16px 0 0; }
+  [hidden] { display: none !important; }
+/*NAV_CSS*/
+</style>
+</head>
+<body>
+<!--NAV-->
+<main>
+  <h1>trout</h1>
+  <p class="lead">An OpenAI-compatible relay for metered client links.</p>
+
+  <div class="card">
+    <form id="login" hidden>
+      <label for="key">Access key</label>
+      <input id="key" type="password" autocomplete="off" placeholder="X-Trout-Key" required>
+      <button class="primary" id="submit" type="submit">Sign in</button>
+    </form>
+
+    <div id="signed-in" hidden>
+      <p style="margin-top: 0">You are signed in on this tab.</p>
+      <div class="row">
+        <a class="primary" href="/dashboard">Open dashboard</a>
+        <button id="logout" type="button">Sign out</button>
+      </div>
+    </div>
+
+    <div id="error" role="alert"></div>
+  </div>
+
+  <p class="hint">The key is checked against this relay and kept only in this browser tab. It is the same key clients send as X-Trout-Key.</p>
+</main>
+
+<script>
+'use strict';
+
+const KEY_STORAGE = 'trout-key';
+const NOTICE_STORAGE = 'trout-notice';
+const DASHBOARD = '/dashboard';
+const $ = (id) => document.getElementById(id);
+
+const show = () => {
+  const signedIn = Boolean(sessionStorage.getItem(KEY_STORAGE));
+
+  $('login').hidden = signedIn;
+  $('signed-in').hidden = !signedIn;
+
+  if (!signedIn) {
+    $('key').focus();
+  }
+};
+
+$('login').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const key = $('key').value.trim();
+
+  if (!key) {
+    return;
+  }
+
+  $('submit').disabled = true;
+  $('error').textContent = '';
+
+  try {
+    const response = await fetch('/stats', { headers: { 'X-Trout-Key': key }, cache: 'no-store' });
+
+    if (response.status === 401) {
+      $('error').textContent = 'That key was not accepted.';
+
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    sessionStorage.setItem(KEY_STORAGE, key);
+    $('key').value = '';
+    location.assign(DASHBOARD);
+  } catch (error) {
+    $('error').textContent = `Could not sign in: ${error.message}`;
+  } finally {
+    $('submit').disabled = false;
+  }
+});
+
+$('logout').addEventListener('click', () => {
+  sessionStorage.removeItem(KEY_STORAGE);
+  show();
+});
+
+const notice = sessionStorage.getItem(NOTICE_STORAGE);
+
+if (notice) {
+  sessionStorage.removeItem(NOTICE_STORAGE);
+  $('error').textContent = notice;
+}
+
+show();
+</script>
+</body>
+</html>

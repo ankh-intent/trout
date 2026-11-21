@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>LLM API providers · trout</title>
+<style>
+  :root {
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --series: #2a78d6;
+    --series-soft: #9ec5f4;
+    --warn: #fab219;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #f0efec;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --series: #3987e5;
+      --series-soft: #184f95;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 32px 20px 64px;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  main { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 40px 0 6px; }
+  h3 { font-size: 14px; margin: 0 0 2px; }
+  p { margin: 6px 0; color: var(--ink-2); max-width: 78ch; }
+  .sub { color: var(--muted); font-size: 13px; }
+
+  .note {
+    border-left: 3px solid var(--warn);
+    background: var(--surface);
+    padding: 10px 14px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .note p { margin: 0; color: var(--ink); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .card.wide { grid-column: 1 / -1; }
+  .card .sub { margin-bottom: 10px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { font: 12px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; fill: var(--ink-2); }
+  svg text.val { fill: var(--ink); font-variant-numeric: tabular-nums; }
+  svg text.tick { fill: var(--muted); font-size: 11px; }
+  svg .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg .baseline { stroke: var(--axis); stroke-width: 1; }
+  svg .bar { fill: var(--series); }
+  svg .bar.soft { fill: var(--series-soft); }
+  svg .dot { fill: var(--series); stroke: var(--surface); stroke-width: 2; }
+  svg .dot.soft { fill: var(--series-soft); }
+  svg .hit { fill: transparent; cursor: default; }
+  svg .hit:hover + .bar, svg .dot:hover { opacity: 0.8; }
+
+  .scroll { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--grid);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.extra td { color: var(--ink-2); }
+
+  #tip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--ink);
+    color: var(--page);
+    padding: 6px 9px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 260px;
+    opacity: 0;
+    transition: opacity 0.08s;
+    z-index: 10;
+  }
+
+  ul.src { padding-left: 18px; color: var(--ink-2); columns: 2; column-gap: 32px; }
+  ul.src li { break-inside: avoid; margin-bottom: 4px; }
+  a { color: var(--series); }
+  td a { color: var(--ink); text-decoration: underline; text-decoration-color: var(--axis); text-underline-offset: 3px; }
+  td a:hover { text-decoration-color: var(--series); color: var(--series); }
+  tr.nodata td a, tr.extra td a { color: inherit; }
+  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
+
+  :root { --c-price: #2a78d6; --c-intel: #eb6834; --c-speed: #1baf7a; }
+
+  @media (prefers-color-scheme: dark) {
+    :root { --c-price: #3987e5; --c-intel: #d95926; --c-speed: #199e70; }
+  }
+
+  .controls { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: end; margin: 12px 0 16px; }
+  .controls label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+  .controls input[type=range] { width: 100%; accent-color: var(--series); }
+  .controls select { width: 100%; padding: 5px 6px; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px; font: inherit; }
+  .ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink); font-weight: 600; }
+  .readout { font-variant-numeric: tabular-nums; color: var(--ink); }
+  #t-rank td { vertical-align: middle; white-space: nowrap; }
+  #t-rank .stack { display: flex; gap: 2px; height: 14px; min-width: 220px; }
+  #t-rank .stack i { display: block; height: 100%; border-radius: 3px; }
+  #t-rank tr.nodata td { color: var(--muted); }
+  .formula { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; margin: 8px 0; color: var(--ink); overflow-x: auto; white-space: nowrap; }
+
+  @media (max-width: 720px) {
+    .controls { grid-template-columns: 1fr; }
+  }
+/*NAV_CSS*/
+</style>
+</head>
+<body>
+<!--NAV-->
+<main>
+  <h1>LLM API providers: price and performance</h1>
+  <div class="sub">Data collected <span id="m-collected"></span> · flagship API model per provider · prices in USD per 1M tokens</div>
+
+  <div class="note">
+    <p><strong>Disclosure:</strong> <span id="m-disclosure"></span></p>
+  </div>
+
+  <h2>Ranking by priority</h2>
+  <p>Method: a weighted-sum model. Each trait is rescaled to 0–100 across the listed providers (100 = best in this set, 0 = worst), then combined with weights you set. Move the slider between the two poles to re-rank.</p>
+  <div class="card">
+    <div class="controls">
+      <div>
+        <div class="ends"><span>Low price</span><span>High intelligence</span></div>
+        <input type="range" id="w-intel" min="0" max="100" value="50" aria-label="Priority between low price and high intelligence">
+        <label>Price <span class="readout" id="r-price"></span> · Intelligence <span class="readout" id="r-intel"></span></label>
+      </div>
+      <div>
+        <label for="w-speed">Speed weight <span class="readout" id="r-speed"></span></label>
+        <input type="range" id="w-speed" min="0" max="50" value="15">
+      </div>
+      <div>
+        <label for="basis">Price measured as</label>
+        <select id="basis">
+          <option value="list">List price (3:1 input:output blend)</option>
+          <option value="cost">Measured cost per benchmark task</option>
+        </select>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--c-price)"></i>Price contribution</span>
+      <span><i style="background:var(--c-intel)"></i>Intelligence contribution</span>
+      <span><i style="background:var(--c-speed)"></i>Speed contribution</span>
+    </div>
+    <div class="scroll"><table id="t-rank"></table></div>
+    <div class="formula">score = (1 − s) × [ (1 − w) × price + w × intelligence ] + s × speed</div>
+    <p class="sub">w = slider position, s = speed weight. Intelligence is rescaled linearly; price and speed on a log scale, because they span orders of magnitude. Cheapest scores 100 on price.
+    "Avg rank" is the provider's mean position across the whole slider at the current speed weight and price basis: one figure that does not depend on where the slider sits.
+    Scores are relative to the listed providers only, so adding or removing one shifts the rest. Providers missing the chosen price measure are listed unranked; a missing speed is filled with the group median and marked *.</p>
+  </div>
+
+  <h2>Charts</h2>
+  <p>Ranked providers are in the main colour. Providers without a place in the ranking are shown lighter.</p>
+  <div class="legend">
+    <span><i style="background:var(--series)"></i>Ranked by usage</span>
+    <span><i style="background:var(--series-soft)"></i>Unranked, for reference</span>
+  </div>
+
+  <div class="grid">
+    <div class="card wide">
+      <h3>Intelligence against output price</h3>
+      <div class="sub">Artificial Analysis Intelligence Index (higher is better) by list output price per 1M tokens, log scale.</div>
+      <div id="scatter"></div>
+    </div>
+    <div class="card">
+      <h3>Intelligence Index</h3>
+      <div class="sub">Artificial Analysis composite of nine evaluations, flagship model</div>
+      <div id="chart-index"></div>
+    </div>
+    <div class="card">
+      <h3>Cost to run the benchmark</h3>
+      <div class="sub">USD per task as paid by Artificial Analysis; reflects real token use, not list price</div>
+      <div id="chart-cost"></div>
+    </div>
+    <div class="card">
+      <h3>Output speed</h3>
+      <div class="sub">Tokens per second, OpenRouter live-traffic median</div>
+      <div id="chart-speed"></div>
+    </div>
+    <div class="card">
+      <h3>Popularity on OpenRouter</h3>
+      <div class="sub">Share of text requests by model author, <span id="m-share"></span></div>
+      <div id="chart-share"></div>
+    </div>
+  </div>
+
+  <h2>Flagship comparison</h2>
+  <p id="m-ranking"></p>
+  <div class="scroll"><table id="t-main"></table></div>
+
+  <p class="sub">In every table, a provider name opens its API sign-up page and a model name opens that provider's pricing page.</p>
+
+  <h2>Cheaper tiers</h2>
+  <div class="scroll"><table id="t-cheap"></table></div>
+
+  <h2>Source affiliations and adjustments</h2>
+  <p id="m-affiliation"></p>
+  <div class="scroll"><table id="t-aff"></table></div>
+
+  <h2>Gaps</h2>
+  <ul id="gaps"></ul>
+
+  <h2>Sources</h2>
+  <ul class="src" id="sources"></ul>
+</main>
+<div id="tip"></div>
+<script type="application/json" id="data">/*DATA*/</script>
+
+<script>
+const data = JSON.parse(document.getElementById('data').textContent) || {};
+const meta = data.meta || {};
+const providers = data.providers || [];
+const share = data.share || [];
+const cheap = data.cheaper_tiers || [];
+const affiliations = data.affiliations || [];
+const gaps = data.gaps || [];
+const sources = data.sources || [];
+const byName = new Map(providers.map((p) => [p.name, p]));
+
+const esc = (value) => String(value).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const anchor = (url, label, title) => `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(title)}">${esc(label)}</a>`;
+
+const providerLink = (name) => {
+  const provider = byName.get(name);
+
+  return provider && provider.signup_url ? anchor(provider.signup_url, name, `Sign up for ${name} API access`) : esc(name);
+};
+
+const modelLink = (name, model) => {
+  const provider = byName.get(name);
+
+  return provider && provider.pricing_url ? anchor(provider.pricing_url, model, `${name} pricing page`) : esc(model);
+};
+
+const NS = 'http://www.w3.org/2000/svg';
+const tip = document.getElementById('tip');
+
+const el = (tag, attrs, text) => {
+  const node = document.createElementNS(NS, tag);
+
+  for (const [key, value] of Object.entries(attrs || {})) {
+    node.setAttribute(key, value);
+  }
+
+  if (text !== undefined) {
+    node.textContent = text;
+  }
+
+  return node;
+};
+
+const bindTip = (node, html) => {
+  node.addEventListener('mousemove', (event) => {
+    tip.innerHTML = html;
+    tip.style.opacity = 1;
+    const width = tip.offsetWidth;
+    const left = Math.min(event.clientX + 14, window.innerWidth - width - 8);
+    tip.style.left = left + 'px';
+    tip.style.top = (event.clientY + 14) + 'px';
+  });
+
+  node.addEventListener('mouseleave', () => {
+    tip.style.opacity = 0;
+  });
+};
+
+const niceMax = (value) => {
+  const pow = Math.pow(10, Math.floor(Math.log10(value)));
+  const steps = [1, 2, 2.5, 5, 10];
+
+  for (const step of steps) {
+    if (step * pow >= value) {
+      return step * pow;
+    }
+  }
+
+  return 10 * pow;
+};
+
+const barChart = (targetId, rows, format, tipText) => {
+  if (rows.length === 0) {
+    return;
+  }
+
+  const sorted = [...rows].sort((a, b) => (a.last ? 1 : 0) - (b.last ? 1 : 0) || b.value - a.value);
+  const labelW = 112;
+  const valueW = 58;
+  const width = 480;
+  const rowH = 26;
+  const top = 4;
+  const axisH = 22;
+  const plotW = width - labelW - valueW;
+  const height = top + sorted.length * rowH + axisH;
+  const max = niceMax(Math.max(...sorted.map((row) => row.value)));
+  const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img' });
+
+  for (let i = 0; i <= 5; i++) {
+    const x = labelW + (plotW * i) / 5;
+    svg.appendChild(el('line', { x1: x, x2: x, y1: top, y2: height - axisH, class: i === 0 ? 'baseline' : 'gridline' }));
+    svg.appendChild(el('text', { x, y: height - 6, 'text-anchor': 'middle', class: 'tick' }, format((max * i) / 5, true)));
+  }
+
+  sorted.forEach((row, i) => {
+    const y = top + i * rowH;
+    const barW = Math.max(2, (row.value / max) * plotW);
+    const hit = el('rect', { x: 0, y, width, height: rowH, class: 'hit' });
+    const bar = el('rect', { x: labelW, y: y + 5, width: barW, height: rowH - 10, rx: 4, class: row.soft ? 'bar soft' : 'bar' });
+
+    svg.appendChild(el('text', { x: labelW - 8, y: y + rowH / 2 + 4, 'text-anchor': 'end' }, row.name));
+    svg.appendChild(hit);
+    svg.appendChild(bar);
+    svg.appendChild(el('text', { x: labelW + barW + 6, y: y + rowH / 2 + 4, class: 'val' }, format(row.value, false)));
+    bindTip(hit, tipText(row));
+    bindTip(bar, tipText(row));
+  });
+
+  document.getElementById(targetId).appendChild(svg);
+};
+
+const scatter = () => {
+  const rows = providers.filter((p) => p.price_out !== null);
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  const width = 1000;
+  const height = 400;
+  const m = { left: 48, right: 110, top: 16, bottom: 44 };
+  const plotW = width - m.left - m.right;
+  const plotH = height - m.top - m.bottom;
+  const ladder = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000];
+  const prices = rows.map((p) => p.price_out);
+  const low = [...ladder].reverse().find((step) => step <= Math.min(...prices)) || ladder[0];
+  const high = ladder.find((step) => step >= Math.max(...prices)) || ladder[ladder.length - 1];
+  const ticks = ladder.filter((step) => step >= low && step <= high);
+  const xMin = Math.log10(low);
+  const xMax = Math.log10(high);
+  const yMin = Math.floor(Math.min(...rows.map((p) => p.index)) / 10) * 10;
+  const yMax = Math.ceil(Math.max(...rows.map((p) => p.index)) / 10) * 10 || 10;
+  const xPos = (price) => m.left + ((Math.log10(price) - xMin) / (xMax - xMin)) * plotW;
+  const yPos = (score) => m.top + (1 - (score - yMin) / (yMax - yMin)) * plotH;
+  const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img' });
+
+  for (let score = yMin; score <= yMax; score += 10) {
+    svg.appendChild(el('line', { x1: m.left, x2: m.left + plotW, y1: yPos(score), y2: yPos(score), class: score === yMin ? 'baseline' : 'gridline' }));
+    svg.appendChild(el('text', { x: m.left - 8, y: yPos(score) + 4, 'text-anchor': 'end', class: 'tick' }, score));
+  }
+
+  for (const price of ticks) {
+    svg.appendChild(el('line', { x1: xPos(price), x2: xPos(price), y1: m.top, y2: m.top + plotH, class: 'gridline' }));
+    svg.appendChild(el('text', { x: xPos(price), y: m.top + plotH + 16, 'text-anchor': 'middle', class: 'tick' }, '$' + price));
+  }
+
+  svg.appendChild(el('text', { x: m.left + plotW / 2, y: height - 6, 'text-anchor': 'middle', class: 'tick' }, 'Output price per 1M tokens (log scale)'));
+  svg.appendChild(el('text', { x: 12, y: m.top + plotH / 2, 'text-anchor': 'middle', class: 'tick', transform: `rotate(-90 12 ${m.top + plotH / 2})` }, 'Intelligence Index'));
+
+  for (const p of rows) {
+    const cx = xPos(p.price_out);
+    const cy = yPos(p.index);
+    const dot = el('circle', { cx, cy, r: 6, class: p.rank === null ? 'dot soft' : 'dot' });
+    const isBelow = p.label_below === true;
+
+    svg.appendChild(el('text', { x: cx + 10, y: cy + (isBelow ? 16 : 4), class: 'val' }, p.name));
+    svg.appendChild(dot);
+    bindTip(dot, `<strong>${esc(p.name)}</strong> · ${esc(p.model)}<br>Index ${p.index}<br>$${p.price_in} in / $${p.price_out} out${p.price_note ? '<br>' + esc(p.price_note) : ''}`);
+  }
+
+  document.getElementById('scatter').appendChild(svg);
+};
+
+const table = (targetId, head, rows) => {
+  const target = document.getElementById(targetId);
+  const thead = '<thead><tr>' + head.map((h) => `<th${h.num ? ' class="num"' : ''}>${h.label}</th>`).join('') + '</tr></thead>';
+  const tbody = rows.map((row) => {
+    const cells = row.cells.map((cell, i) => `<td${head[i].num ? ' class="num"' : ''}>${cell}</td>`).join('');
+
+    return `<tr${row.extra ? ' class="extra"' : ''}>${cells}</tr>`;
+  }).join('');
+
+  target.innerHTML = thead + '<tbody>' + tbody + '</tbody>';
+};
+
+const dash = (value, format) => (value === null ? '—' : format(value));
+const money = (value) => '$' + (Number.isInteger(value) ? String(value) : value.toFixed(2));
+
+scatter();
+
+barChart(
+  'chart-index',
+  providers.map((p) => ({ name: p.name, value: p.index, soft: p.rank === null, model: p.model })),
+  (value) => String(Math.round(value)),
+  (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>Index ${row.value}`,
+);
+
+barChart(
+  'chart-cost',
+  providers.filter((p) => p.cost_per_task !== null).map((p) => ({ name: p.name, value: p.cost_per_task, soft: p.rank === null, model: p.model })),
+  (value, tick) => '$' + (tick ? value : value.toFixed(2)),
+  (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>$${row.value.toFixed(2)} per task`,
+);
+
+barChart(
+  'chart-speed',
+  providers.filter((p) => p.speed !== null).map((p) => ({ name: p.name, value: p.speed, soft: p.rank === null, model: p.model })),
+  (value) => String(Math.round(value)),
+  (row) => `<strong>${esc(row.name)}</strong> · ${esc(row.model)}<br>${row.value} tokens/s`,
+);
+
+barChart(
+  'chart-share',
+  share,
+  (value, tick) => (tick ? Math.round(value) : value.toFixed(1)) + '%',
+  (row) => `<strong>${esc(row.name)}</strong><br>${row.value.toFixed(1)}% of requests`,
+);
+
+table(
+  't-main',
+  [
+    { label: '#', num: true },
+    { label: 'Provider' },
+    { label: 'Flagship API model' },
+    { label: 'Price in', num: true },
+    { label: 'Price out', num: true },
+    { label: 'Price note' },
+    { label: 'AA Index', num: true },
+    { label: 'AA cost / task', num: true },
+    { label: 'Speed, tok/s', num: true },
+    { label: 'Arena Elo raw', num: true },
+    { label: 'Arena Elo adjusted', num: true },
+  ],
+  providers.map((p) => ({
+    extra: p.rank === null,
+    cells: [
+      dash(p.rank, String),
+      providerLink(p.name),
+      modelLink(p.name, p.model),
+      money(p.price_in),
+      dash(p.price_out, money),
+      esc(p.price_note || ''),
+      p.index,
+      dash(p.cost_per_task, (value) => '$' + value.toFixed(2)),
+      dash(p.speed, String),
+      dash(p.arena_raw, String),
+      dash(p.arena_adjusted, String),
+    ],
+  })),
+);
+
+table(
+  't-cheap',
+  [{ label: 'Provider' }, { label: 'Model' }, { label: 'Price in / out', num: true }, { label: 'AA Index', num: true }, { label: 'Speed, tok/s', num: true }],
+  cheap.map((row) => ({
+    cells: [providerLink(row.provider), modelLink(row.provider, row.model), `${money(row.price_in)} / ${money(row.price_out)}`, row.index, row.speed],
+  })),
+);
+
+table(
+  't-aff',
+  [{ label: 'Source' }, { label: 'Affiliation found' }, { label: 'Adjustment applied' }],
+  affiliations.map((row) => ({ cells: [esc(row.source), esc(row.affiliation), esc(row.adjustment)] })),
+);
+
+document.getElementById('sources').innerHTML = sources
+  .map((source) => `<li>${anchor(source.url, source.label, source.label)}</li>`)
+  .join('');
+document.getElementById('gaps').innerHTML = gaps.map((gap) => `<li>${esc(gap)}</li>`).join('');
+
+for (const [id, text] of [
+  ['m-collected', meta.collected],
+  ['m-disclosure', meta.disclosure],
+  ['m-ranking', meta.ranking_note],
+  ['m-affiliation', meta.affiliation_note],
+  ['m-share', meta.share_period],
+]) {
+  document.getElementById(id).textContent = text || '';
+}
+
+const listBlend = (p) => (p.price_out === null ? null : (3 * p.price_in + p.price_out) / 4);
+const median = (values) => {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+
+const scale = (value, min, max, log) => {
+  const f = log ? Math.log : (x) => x;
+
+  if (max === min) {
+    return 100;
+  }
+
+  return ((f(value) - f(min)) / (f(max) - f(min))) * 100;
+};
+
+const traitScores = (basis) => {
+  const speeds = providers.filter((p) => p.speed !== null).map((p) => p.speed);
+  const speedMedian = median(speeds);
+  const priced = providers
+    .map((p) => ({ p, price: basis === 'list' ? listBlend(p) : p.cost_per_task }))
+    .filter((row) => row.price !== null);
+  const prices = priced.map((row) => row.price);
+  const indexes = providers.map((p) => p.index);
+  const bounds = {
+    price: [Math.min(...prices), Math.max(...prices)],
+    index: [Math.min(...indexes), Math.max(...indexes)],
+    speed: [Math.min(...speeds), Math.max(...speeds)],
+  };
+
+  return priced.map(({ p, price }) => ({
+    p,
+    price,
+    speedEst: p.speed === null,
+    sPrice: 100 - scale(price, bounds.price[0], bounds.price[1], true),
+    sIntel: scale(p.index, bounds.index[0], bounds.index[1], false),
+    sSpeed: scale(p.speed === null ? speedMedian : p.speed, bounds.speed[0], bounds.speed[1], true),
+  }));
+};
+
+const rankAt = (rows, w, s) => rows
+  .map((row) => {
+    const cPrice = (1 - s) * (1 - w) * row.sPrice;
+    const cIntel = (1 - s) * w * row.sIntel;
+    const cSpeed = s * row.sSpeed;
+
+    return { ...row, cPrice, cIntel, cSpeed, score: cPrice + cIntel + cSpeed };
+  })
+  .sort((a, b) => b.score - a.score);
+
+const averageRanks = (rows, s) => {
+  const totals = new Map(rows.map((row) => [row.p.name, 0]));
+  const steps = 100;
+
+  for (let i = 0; i <= steps; i++) {
+    rankAt(rows, i / steps, s).forEach((row, position) => {
+      totals.set(row.p.name, totals.get(row.p.name) + position + 1);
+    });
+  }
+
+  return new Map([...totals].map(([name, total]) => [name, total / (steps + 1)]));
+};
+
+const renderRanking = () => {
+  const w = Number(document.getElementById('w-intel').value) / 100;
+  const s = Number(document.getElementById('w-speed').value) / 100;
+  const basis = document.getElementById('basis').value;
+  const rows = traitScores(basis);
+  const ranked = rankAt(rows, w, s);
+  const averages = averageRanks(rows, s);
+  const missing = providers.filter((p) => !rows.some((row) => row.p === p));
+  const pct = (value) => Math.round(value * 100) + '%';
+  const priceLabel = basis === 'list' ? 'Blended $/1M' : 'Cost / task';
+  const segment = (value, color) => (value > 0.05 ? `<i style="width:${value}%;background:var(${color})"></i>` : '');
+
+  document.getElementById('r-price').textContent = pct((1 - s) * (1 - w));
+  document.getElementById('r-intel').textContent = pct((1 - s) * w);
+  document.getElementById('r-speed').textContent = pct(s);
+
+  const head = ['Rank', 'Provider', 'Model', 'Score breakdown', 'Score', priceLabel, 'Price score', 'Intelligence score', 'Speed score', 'Avg rank'];
+  const numeric = [true, false, false, false, true, true, true, true, true, true];
+  const cell = (value, i) => `<td${numeric[i] ? ' class="num"' : ''}>${value}</td>`;
+  const body = ranked.map((row, position) => '<tr>' + [
+    position + 1,
+    providerLink(row.p.name),
+    modelLink(row.p.name, row.p.model),
+    `<div class="stack">${segment(row.cPrice, '--c-price')}${segment(row.cIntel, '--c-intel')}${segment(row.cSpeed, '--c-speed')}</div>`,
+    row.score.toFixed(1),
+    '$' + row.price.toFixed(2),
+    Math.round(row.sPrice),
+    Math.round(row.sIntel),
+    Math.round(row.sSpeed) + (row.speedEst ? '*' : ''),
+    averages.get(row.p.name).toFixed(1),
+  ].map(cell).join('') + '</tr>').join('');
+  const tail = missing.map((p) => '<tr class="nodata">' + [
+    '—', providerLink(p.name), modelLink(p.name, p.model), 'No data for this price measure', '—', '—', '—', '—', '—', '—',
+  ].map(cell).join('') + '</tr>').join('');
+
+  document.getElementById('t-rank').innerHTML = '<thead><tr>'
+    + head.map((label, i) => `<th${numeric[i] ? ' class="num"' : ''}>${label}</th>`).join('')
+    + '</tr></thead><tbody>' + body + tail + '</tbody>';
+};
+
+for (const id of ['w-intel', 'w-speed', 'basis']) {
+  document.getElementById(id).addEventListener('input', renderRanking);
+}
+
+renderRanking();
+</script>
+</body>
+</html>

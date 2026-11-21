@@ -5,6 +5,7 @@ pub mod codec;
 pub mod config;
 pub mod dashboard;
 pub mod error;
+pub mod pages;
 pub mod proxy;
 pub mod responses;
 pub mod store;
@@ -62,7 +63,9 @@ pub fn build_app(config: Config) -> Result<Router, BuildError> {
 
     Ok(Router::new()
         .route(auth::HEALTH_PATH, get(health))
-        .route(auth::DASHBOARD_PATH, get(dashboard::page))
+        .route(pages::HOME_PATH, get(pages::home))
+        .route(pages::DASHBOARD_PATH, get(pages::dashboard))
+        .route(pages::PROVIDERS_PATH, get(pages::providers))
         .route("/stats", get(dashboard::stats))
         .route("/v1/responses", post(handlers::create))
         .route(
