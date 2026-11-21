@@ -229,7 +229,7 @@
       </div>
       <div>
         <h3>Provider profiles</h3>
-        <div class="sub">One shape per provider: the three scores of its best model for the current priority (its flagship when ranking flagships only). 0 at the centre, 100 at a corner. The dotted triangle is the current priority. Hover a provider to bring it forward; click it to hide or show it.</div>
+        <div class="sub">One shape per provider: the three scores of its best model for the current priority (its flagship when ranking flagships only). 0 at the centre, 100 at a corner. The dotted triangle is the current priority. Hover a provider to bring it forward; click it to hide or show it, here and in the tables below.</div>
         <div id="radar"></div>
         <div class="chips" id="radar-legend"></div>
       </div>
@@ -242,7 +242,7 @@
     <div class="scroll"><table id="t-rank"></table></div>
     <div class="formula">score = w(price) × price + w(intelligence) × intelligence + w(speed) × speed,  weights sum to 100%</div>
     <p class="sub">Price scores higher when lower; intelligence and speed score higher when higher. Intelligence is rescaled linearly; price and speed on a log scale, because they span orders of magnitude.
-    "Avg rank" is the row's mean position over every point of the triangle for the chosen price measure: one figure that does not depend on where the knob sits. When ranking each provider's best model, the model in a provider's row changes with the knob, and its average rank follows the provider.
+    "Avg rank" is the row's mean position over every point of the triangle for the chosen price measure: one figure that does not depend on where the knob sits, nor on which providers are hidden. When ranking each provider's best model, the model in a provider's row changes with the knob, and its average rank follows the provider.
     Scores are relative to the listed models only, so adding or removing one shifts the rest. Models missing the chosen price measure are listed unranked; a missing speed is filled with the group median and marked *.</p>
   </div>
 
@@ -285,6 +285,7 @@
   <h2>All models</h2>
   <p id="m-ranking"></p>
   <p id="m-models"></p>
+  <p class="sub">Providers hidden in the ranking above are left out here too.</p>
   <div class="scroll"><table id="t-main"></table></div>
 
   <p class="sub">In every table, a provider name opens its API sign-up page and a model name opens that provider's pricing page.</p>
@@ -503,7 +504,7 @@ barChart(
   (row) => `<strong>${esc(row.name)}</strong><br>${row.value.toFixed(1)}% of requests`,
 );
 
-table(
+const renderModels = () => table(
   't-main',
   [
     { label: '#', num: true },
@@ -518,7 +519,7 @@ table(
     { label: 'Arena Elo raw', num: true },
     { label: 'Arena Elo adjusted', num: true },
   ],
-  models.map((m) => ({
+  models.filter((m) => !hidden.has(m.provider.name)).map((m) => ({
     cls: [m.flagship ? 'lead' : '', m.provider.rank === null ? 'extra' : ''].filter(Boolean).join(' '),
     cells: [
       m.flagship ? dash(m.provider.rank, String) : '',
@@ -944,13 +945,14 @@ const renderLegend = (rows) => {
 };
 
 const renderTable = (basis, scope, rows) => {
-  const ranked = select(rows, weights, scope);
+  const shown = (m) => !hidden.has(m.provider.name);
+  const ranked = select(rows, weights, scope).filter((row) => shown(row.m));
   const averages = averageRanks(basis, scope, rows);
   const scored = new Set(rows.map((row) => row.m));
   const covered = new Set(rows.map((row) => row.m.provider));
-  const missing = scope === 'best'
+  const missing = (scope === 'best'
     ? flagships.filter((m) => !covered.has(m.provider))
-    : models.filter((m) => !scored.has(m) && (scope === 'all' || m.flagship));
+    : models.filter((m) => !scored.has(m) && (scope === 'all' || m.flagship))).filter(shown);
   const priceLabel = basis === 'list' ? 'Blended $/1M' : 'Cost / task';
   const segment = (value, color) => (value > 0.05 ? `<i style="width:${value}%;background:var(${color})"></i>` : '');
   const head = ['Rank', 'Provider', 'Model', 'Score breakdown', 'Score', priceLabel, 'Price score', 'Intelligence score', 'Speed score', 'Avg rank'];
@@ -993,6 +995,7 @@ const render = () => {
   renderRadar(select(rows, weights, scope === 'flagship' ? 'flagship' : 'best'));
   renderLegend(rows);
   renderTable(basis, scope, rows);
+  renderModels();
 };
 
 function setWeights(next) {
