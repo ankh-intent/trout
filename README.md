@@ -132,7 +132,7 @@ forgotten background tab does not keep the machine awake; a visible one does wak
 ### LLM providers page
 
 `/providers` is a comparison of LLM API providers: prices, independent benchmark scores, measured speed
-and an interactive ranking between low price and high intelligence. It is public and static, like the
+and an interactive ranking weighted between price, intelligence and speed. It is public and static, like the
 other pages, and loads nothing from anywhere else.
 
 All of its figures and text come from [`src/pages/providers.json`](src/pages/providers.json), which is
@@ -289,7 +289,8 @@ Things to know:
   until it recovers; clients recover from lost conversations by re-sending the full history.
 - Logs: `fly logs`. Shell: `fly ssh console`.
 
-This deployment has not been run yet: the image build and the Fly configuration are untested.
+This repository is deployed this way. With Fly's GitHub integration connected to the repository, every
+push to `master` is built and deployed without running `fly deploy` by hand.
 
 ## Measured
 

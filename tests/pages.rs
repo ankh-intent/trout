@@ -133,6 +133,13 @@ async fn providers_page_embeds_its_data() {
     assert!(!data["providers"].as_array().unwrap().is_empty());
     assert!(data["meta"]["collected"].is_string());
     assert!(data["sources"].is_array());
+
+    for expected in [r#"id="tri-control""#, r#"id="radar""#, r#"id="t-rank""#] {
+        assert!(
+            html.contains(expected),
+            "providers page should contain `{expected}`"
+        );
+    }
 }
 
 #[tokio::test]

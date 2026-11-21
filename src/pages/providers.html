@@ -131,18 +131,48 @@
   .legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; }
 
-  :root { --c-price: #2a78d6; --c-intel: #eb6834; --c-speed: #1baf7a; }
-
-  @media (prefers-color-scheme: dark) {
-    :root { --c-price: #3987e5; --c-intel: #d95926; --c-speed: #199e70; }
+  :root {
+    --t-price: #3d3c39; --t-intel: #898781; --t-speed: #c3c2b7;
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+    --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
   }
 
-  .controls { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 20px; align-items: end; margin: 12px 0 16px; }
-  .controls label { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
-  .controls input[type=range] { width: 100%; accent-color: var(--series); }
-  .controls select { width: 100%; padding: 5px 6px; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px; font: inherit; }
-  .ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink); font-weight: 600; }
-  .readout { font-variant-numeric: tabular-nums; color: var(--ink); }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --t-price: #f0efec; --t-intel: #898781; --t-speed: #52514e;
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+      --s5: #d55181; --s6: #0ca30c; --s7: #9085e9; --s8: #e66767;
+    }
+  }
+
+  .rank-top { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; margin-bottom: 16px; }
+  .rank-top label { display: block; font-size: 12px; color: var(--ink-2); margin: 12px 0 4px; }
+  .rank-top select { width: 100%; padding: 5px 6px; background: var(--surface); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px; font: inherit; }
+  .presets, .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .presets button, .chips button {
+    font: inherit; font-size: 12px; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--axis); border-radius: 6px; padding: 3px 8px; cursor: pointer;
+  }
+  .presets button:hover, .chips button:hover { color: var(--ink); border-color: var(--series); }
+  .chips button { display: inline-flex; align-items: center; gap: 6px; }
+  .chips button[aria-pressed=false] { opacity: 0.45; text-decoration: line-through; }
+  .chips button:disabled { opacity: 0.35; cursor: default; }
+  svg.swatch { display: inline-block; flex: none; width: 20px; height: 10px; }
+  #tri-control svg { touch-action: none; cursor: pointer; max-width: 300px; margin: 0 auto; }
+  #tri-control .face { fill: var(--page); stroke: var(--axis); stroke-width: 1.5; }
+  #tri-control .guide { stroke: var(--grid); stroke-width: 1; }
+  #tri-control .knob { fill: var(--series); stroke: var(--surface); stroke-width: 3; cursor: grab; }
+  #tri-control .knob:focus-visible { outline: none; stroke: var(--ink); }
+  #tri-control text.corner { fill: var(--ink); font-weight: 600; font-size: 13px; }
+  #tri-control text.pct { fill: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #tri-control text.hint { fill: var(--muted); font-size: 11px; }
+  #radar svg { max-width: 520px; margin: 0 auto; }
+  #radar .profile { fill-opacity: 0.05; stroke-width: 1.75; stroke-linejoin: round; transition: opacity 0.1s; }
+  #radar.focus .profile { opacity: 0.12; }
+  #radar.focus .profile.on { opacity: 1; fill-opacity: 0.16; stroke-width: 2.5; }
+  #radar .selection { fill: var(--ink); fill-opacity: 0.05; stroke: var(--ink); stroke-width: 2.25; stroke-dasharray: 0.1 6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+  #radar .selection-dot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; pointer-events: none; }
+  #radar text.axis { fill: var(--ink); font-weight: 600; font-size: 12px; }
   #t-rank td { vertical-align: middle; white-space: nowrap; }
   #t-rank .stack { display: flex; gap: 2px; height: 14px; min-width: 220px; }
   #t-rank .stack i { display: block; height: 100%; border-radius: 3px; }
@@ -150,7 +180,7 @@
   .formula { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--page); border: 1px solid var(--grid); border-radius: 6px; padding: 8px 10px; margin: 8px 0; color: var(--ink); overflow-x: auto; white-space: nowrap; }
 
   @media (max-width: 720px) {
-    .controls { grid-template-columns: 1fr; }
+    .rank-top { grid-template-columns: minmax(0, 1fr); }
   }
 /*NAV_CSS*/
 </style>
@@ -166,35 +196,41 @@
   </div>
 
   <h2>Ranking by priority</h2>
-  <p>Method: a weighted-sum model. Each trait is rescaled to 0–100 across the listed providers (100 = best in this set, 0 = worst), then combined with weights you set. Move the slider between the two poles to re-rank.</p>
+  <p>Method: a weighted-sum model. Each trait is rescaled to 0–100 across the listed providers (100 = best in this set, 0 = worst), then combined with the three weights set by the knob.</p>
   <div class="card">
-    <div class="controls">
+    <div class="rank-top">
       <div>
-        <div class="ends"><span>Low price</span><span>High intelligence</span></div>
-        <input type="range" id="w-intel" min="0" max="100" value="50" aria-label="Priority between low price and high intelligence">
-        <label>Price <span class="readout" id="r-price"></span> · Intelligence <span class="readout" id="r-intel"></span></label>
-      </div>
-      <div>
-        <label for="w-speed">Speed weight <span class="readout" id="r-speed"></span></label>
-        <input type="range" id="w-speed" min="0" max="50" value="15">
-      </div>
-      <div>
+        <h3>Priority</h3>
+        <div class="sub">Drag the knob or use the arrow keys. A corner gives that trait 100%; the centre splits evenly.</div>
+        <div id="tri-control"></div>
+        <div class="presets" id="presets">
+          <button type="button" data-weights="1,0,0">Price</button>
+          <button type="button" data-weights="0,1,0">Intelligence</button>
+          <button type="button" data-weights="0,0,1">Speed</button>
+          <button type="button" data-weights="1,1,1">Balanced</button>
+        </div>
         <label for="basis">Price measured as</label>
         <select id="basis">
           <option value="list">List price (3:1 input:output blend)</option>
           <option value="cost">Measured cost per benchmark task</option>
         </select>
       </div>
+      <div>
+        <h3>Provider profiles</h3>
+        <div class="sub">Each provider's three scores: 0 at the centre, 100 at a corner. The dotted triangle is the current priority. Hover a provider to bring it forward; click it to hide or show it.</div>
+        <div id="radar"></div>
+        <div class="chips" id="radar-legend"></div>
+      </div>
     </div>
     <div class="legend">
-      <span><i style="background:var(--c-price)"></i>Price contribution</span>
-      <span><i style="background:var(--c-intel)"></i>Intelligence contribution</span>
-      <span><i style="background:var(--c-speed)"></i>Speed contribution</span>
+      <span><i style="background:var(--t-price)"></i>Price contribution</span>
+      <span><i style="background:var(--t-intel)"></i>Intelligence contribution</span>
+      <span><i style="background:var(--t-speed)"></i>Speed contribution</span>
     </div>
     <div class="scroll"><table id="t-rank"></table></div>
-    <div class="formula">score = (1 − s) × [ (1 − w) × price + w × intelligence ] + s × speed</div>
-    <p class="sub">w = slider position, s = speed weight. Intelligence is rescaled linearly; price and speed on a log scale, because they span orders of magnitude. Cheapest scores 100 on price.
-    "Avg rank" is the provider's mean position across the whole slider at the current speed weight and price basis: one figure that does not depend on where the slider sits.
+    <div class="formula">score = w(price) × price + w(intelligence) × intelligence + w(speed) × speed,  weights sum to 100%</div>
+    <p class="sub">Price scores higher when lower; intelligence and speed score higher when higher. Intelligence is rescaled linearly; price and speed on a log scale, because they span orders of magnitude.
+    "Avg rank" is the provider's mean position over every point of the triangle for the chosen price measure: one figure that does not depend on where the knob sits.
     Scores are relative to the listed providers only, so adding or removing one shifts the rest. Providers missing the chosen price measure are listed unranked; a missing speed is filled with the group median and marked *.</p>
   </div>
 
@@ -561,80 +597,387 @@ const traitScores = (basis) => {
     p,
     price,
     speedEst: p.speed === null,
-    sPrice: 100 - scale(price, bounds.price[0], bounds.price[1], true),
-    sIntel: scale(p.index, bounds.index[0], bounds.index[1], false),
-    sSpeed: scale(p.speed === null ? speedMedian : p.speed, bounds.speed[0], bounds.speed[1], true),
+    scores: [
+      100 - scale(price, bounds.price[0], bounds.price[1], true),
+      scale(p.index, bounds.index[0], bounds.index[1], false),
+      scale(p.speed === null ? speedMedian : p.speed, bounds.speed[0], bounds.speed[1], true),
+    ],
   }));
 };
 
-const rankAt = (rows, w, s) => rows
-  .map((row) => {
-    const cPrice = (1 - s) * (1 - w) * row.sPrice;
-    const cIntel = (1 - s) * w * row.sIntel;
-    const cSpeed = s * row.sSpeed;
+// Trait order everywhere: price, intelligence, speed.
+const TRAITS = ['Price', 'Intelligence', 'Speed'];
+const TRAIT_HINTS = ['lower is better', 'higher is better', 'higher is better'];
+const TRAIT_COLORS = ['--t-price', '--t-intel', '--t-speed'];
+const SERIES = ['--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7', '--s8'];
+const KEY_STEP = 0.02;
 
-    return { ...row, cPrice, cIntel, cSpeed, score: cPrice + cIntel + cSpeed };
+let weights = [1 / 3, 1 / 3, 1 / 3];
+const hidden = new Set();
+const averageCache = new Map();
+
+// A provider keeps its colour whatever its rank: it follows its place in the data file. Past the
+// eighth, hues repeat with a dashed line.
+const styleOf = (provider) => {
+  const index = providers.indexOf(provider);
+
+  return { color: `var(${SERIES[index % SERIES.length]})`, dash: index >= SERIES.length ? '6 4' : '' };
+};
+
+const swatch = (provider) => {
+  const { color, dash } = styleOf(provider);
+
+  return `<svg class="swatch" width="20" height="10" viewBox="0 0 20 10" aria-hidden="true"><line x1="1" y1="5" x2="19" y2="5" stroke="${color}" stroke-width="3" stroke-linecap="round"${dash ? ' stroke-dasharray="5 4"' : ''}></line></svg>`;
+};
+
+// Corners of an upright triangle: price bottom-left, intelligence top, speed bottom-right.
+const corners = (cx, cy, r) => {
+  const half = r * Math.cos(Math.PI / 6);
+
+  return [
+    { x: cx - half, y: cy + r / 2 },
+    { x: cx, y: cy - r },
+    { x: cx + half, y: cy + r / 2 },
+  ];
+};
+
+const normalise = (values) => {
+  const clamped = values.map((value) => Math.max(0, value));
+  const total = clamped.reduce((sum, value) => sum + value, 0);
+
+  return total > 0 ? clamped.map((value) => value / total) : [1 / 3, 1 / 3, 1 / 3];
+};
+
+const percents = (values) => {
+  if (Math.max(...values) - Math.min(...values) < 0.005) {
+    return [33, 33, 33];
+  }
+
+  const rounded = values.map((value) => Math.round(value * 100));
+  const largest = rounded.indexOf(Math.max(...rounded));
+
+  rounded[largest] += 100 - rounded.reduce((sum, value) => sum + value, 0);
+
+  return rounded;
+};
+
+const rankAt = (rows, w) => rows
+  .map((row) => {
+    const parts = row.scores.map((score, i) => w[i] * score);
+
+    return { ...row, parts, score: parts[0] + parts[1] + parts[2] };
   })
   .sort((a, b) => b.score - a.score);
 
-const averageRanks = (rows, s) => {
+const averageRanks = (basis, rows) => {
+  if (averageCache.has(basis)) {
+    return averageCache.get(basis);
+  }
+
   const totals = new Map(rows.map((row) => [row.p.name, 0]));
-  const steps = 100;
+  const steps = 20;
+  let points = 0;
 
   for (let i = 0; i <= steps; i++) {
-    rankAt(rows, i / steps, s).forEach((row, position) => {
-      totals.set(row.p.name, totals.get(row.p.name) + position + 1);
+    for (let j = 0; j <= steps - i; j++) {
+      rankAt(rows, [i / steps, j / steps, (steps - i - j) / steps]).forEach((row, position) => {
+        totals.set(row.p.name, totals.get(row.p.name) + position + 1);
+      });
+      points += 1;
+    }
+  }
+
+  const averages = new Map([...totals].map(([name, total]) => [name, total / points]));
+
+  averageCache.set(basis, averages);
+
+  return averages;
+};
+
+const control = (() => {
+  const width = 300;
+  const height = 270;
+  const pts = corners(150, 150, 110);
+  const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'group', 'aria-label': 'Priority between price, intelligence and speed' });
+  const centre = { x: (pts[0].x + pts[1].x + pts[2].x) / 3, y: (pts[0].y + pts[1].y + pts[2].y) / 3 };
+  const labelAt = [
+    { x: pts[0].x - 4, y: pts[0].y + 20, anchor: 'start' },
+    { x: pts[1].x, y: pts[1].y - 28, anchor: 'middle' },
+    { x: pts[2].x + 4, y: pts[2].y + 20, anchor: 'end' },
+  ];
+  const readouts = [];
+
+  svg.appendChild(el('polygon', { points: pts.map((p) => `${p.x},${p.y}`).join(' '), class: 'face' }));
+
+  pts.forEach((p, i) => {
+    const opposite = { x: (pts[(i + 1) % 3].x + pts[(i + 2) % 3].x) / 2, y: (pts[(i + 1) % 3].y + pts[(i + 2) % 3].y) / 2 };
+    const at = labelAt[i];
+    const readout = el('text', { x: at.x, y: at.y + 15, 'text-anchor': at.anchor, class: 'pct' });
+
+    svg.appendChild(el('line', { x1: p.x, y1: p.y, x2: opposite.x, y2: opposite.y, class: 'guide' }));
+    svg.appendChild(el('text', { x: at.x, y: at.y, 'text-anchor': at.anchor, class: 'corner' }, TRAITS[i]));
+    svg.appendChild(readout);
+    svg.appendChild(el('text', { x: at.x, y: at.y + 29, 'text-anchor': at.anchor, class: 'hint' }, TRAIT_HINTS[i]));
+    readouts.push(readout);
+  });
+
+  svg.appendChild(el('circle', { cx: centre.x, cy: centre.y, r: 2.5, class: 'guide', fill: 'var(--axis)' }));
+
+  const knob = el('circle', { r: 10, class: 'knob', tabindex: 0, role: 'slider', 'aria-label': 'Priority knob' });
+
+  svg.appendChild(knob);
+
+  const fromPoint = (x, y) => {
+    const [a, b, c] = pts;
+    const det = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+    const wa = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) / det;
+    const wb = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) / det;
+    // Close to an edge or a corner counts as on it, so exact 100% and 50/50 are reachable.
+    const snapped = normalise([wa, wb, 1 - wa - wb]).map((value) => (value < 0.025 ? 0 : value));
+
+    return normalise(snapped);
+  };
+
+  const fromEvent = (event) => {
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(svg.getScreenCTM().inverse());
+
+    return fromPoint(point.x, point.y);
+  };
+
+  const draw = () => {
+    const x = weights[0] * pts[0].x + weights[1] * pts[1].x + weights[2] * pts[2].x;
+    const y = weights[0] * pts[0].y + weights[1] * pts[1].y + weights[2] * pts[2].y;
+    const shown = percents(weights);
+
+    knob.setAttribute('cx', x);
+    knob.setAttribute('cy', y);
+    knob.setAttribute('aria-valuetext', TRAITS.map((trait, i) => `${trait} ${shown[i]}%`).join(', '));
+
+    readouts.forEach((readout, i) => {
+      readout.textContent = `${shown[i]}%`;
+    });
+  };
+
+  let dragging = false;
+
+  svg.addEventListener('pointerdown', (event) => {
+    dragging = true;
+    svg.setPointerCapture(event.pointerId);
+    setWeights(fromEvent(event));
+  });
+
+  svg.addEventListener('pointermove', (event) => {
+    if (dragging) {
+      setWeights(fromEvent(event));
+    }
+  });
+
+  for (const type of ['pointerup', 'pointercancel']) {
+    svg.addEventListener(type, () => {
+      dragging = false;
     });
   }
 
-  return new Map([...totals].map(([name, total]) => [name, total / (steps + 1)]));
+  // Arrow keys move the knob the way they point: up towards intelligence, left towards price,
+  // right towards speed, down away from intelligence.
+  knob.addEventListener('keydown', (event) => {
+    const moves = { ArrowLeft: [0, KEY_STEP], ArrowUp: [1, KEY_STEP], ArrowRight: [2, KEY_STEP], ArrowDown: [1, -KEY_STEP] };
+    const move = moves[event.key];
+
+    if (!move) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const [index, delta] = move;
+    const target = Math.min(1, Math.max(0, weights[index] + delta));
+    const others = [0, 1, 2].filter((i) => i !== index);
+    const rest = weights[others[0]] + weights[others[1]];
+    const next = [...weights];
+
+    next[index] = target;
+
+    for (const i of others) {
+      next[i] = rest > 0 ? (weights[i] / rest) * (1 - target) : (1 - target) / 2;
+    }
+
+    setWeights(next);
+  });
+
+  document.getElementById('tri-control').appendChild(svg);
+
+  return { draw };
+})();
+
+const renderRadar = (rows) => {
+  const host = document.getElementById('radar');
+  const width = 520;
+  const height = 350;
+  const cx = 260;
+  const cy = 215;
+  const r = 180;
+  const outer = corners(cx, cy, r);
+  const svg = el('svg', { viewBox: `0 0 ${width} ${height}`, role: 'img', 'aria-label': 'Provider scores for price, intelligence and speed' });
+  const along = (i, fraction) => ({ x: cx + (outer[i].x - cx) * fraction, y: cy + (outer[i].y - cy) * fraction });
+  const shape = (fractions) => fractions.map((fraction, i) => along(i, fraction)).map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const axisLabel = [
+    { dx: 0, dy: 18, anchor: 'start' },
+    { dx: 0, dy: -10, anchor: 'middle' },
+    { dx: 0, dy: 18, anchor: 'end' },
+  ];
+
+  for (const ring of [0.25, 0.5, 0.75, 1]) {
+    svg.appendChild(el('polygon', { points: shape([ring, ring, ring]), fill: 'none', class: ring === 1 ? 'baseline' : 'gridline' }));
+  }
+
+  outer.forEach((p, i) => {
+    svg.appendChild(el('line', { x1: cx, y1: cy, x2: p.x, y2: p.y, class: 'gridline' }));
+    svg.appendChild(el('text', { x: p.x + axisLabel[i].dx, y: p.y + axisLabel[i].dy, 'text-anchor': axisLabel[i].anchor, class: 'axis' }, `${TRAITS[i]} score`));
+  });
+
+  for (const tick of [50]) {
+    const at = along(1, tick / 100);
+
+    svg.appendChild(el('text', { x: at.x + 6, y: at.y + 4, class: 'tick' }, tick));
+  }
+
+  for (const row of rows) {
+    if (hidden.has(row.p.name)) {
+      continue;
+    }
+
+    const { color, dash } = styleOf(row.p);
+    const profile = el('polygon', {
+      points: shape(row.scores.map((score) => score / 100)),
+      class: 'profile',
+      stroke: color,
+      fill: color,
+      'data-provider': row.p.name,
+    });
+
+    if (dash) {
+      profile.setAttribute('stroke-dasharray', dash);
+    }
+
+    profile.addEventListener('mouseenter', () => focusProvider(row.p.name));
+    profile.addEventListener('mouseleave', () => focusProvider(null));
+    bindTip(profile, `<strong>${esc(row.p.name)}</strong> · ${esc(row.p.model)}<br>Price ${Math.round(row.scores[0])} · Intelligence ${Math.round(row.scores[1])} · Speed ${Math.round(row.scores[2])}${row.speedEst ? '*' : ''}`);
+    svg.appendChild(profile);
+  }
+
+  svg.appendChild(el('polygon', { points: shape(weights), class: 'selection' }));
+
+  weights.forEach((weight, i) => {
+    const at = along(i, weight);
+
+    svg.appendChild(el('circle', { cx: at.x, cy: at.y, r: 4, class: 'selection-dot' }));
+  });
+
+  host.replaceChildren(svg);
 };
 
-const renderRanking = () => {
-  const w = Number(document.getElementById('w-intel').value) / 100;
-  const s = Number(document.getElementById('w-speed').value) / 100;
-  const basis = document.getElementById('basis').value;
-  const rows = traitScores(basis);
-  const ranked = rankAt(rows, w, s);
-  const averages = averageRanks(rows, s);
+const focusProvider = (name) => {
+  const host = document.getElementById('radar');
+
+  host.classList.toggle('focus', name !== null);
+
+  for (const profile of host.querySelectorAll('.profile')) {
+    profile.classList.toggle('on', profile.getAttribute('data-provider') === name);
+  }
+};
+
+const renderLegend = (rows) => {
+  const legend = document.getElementById('radar-legend');
+  const ranked = new Set(rows.map((row) => row.p.name));
+
+  legend.replaceChildren();
+
+  for (const provider of providers) {
+    const button = document.createElement('button');
+    const available = ranked.has(provider.name);
+
+    button.type = 'button';
+    button.innerHTML = `${swatch(provider)}${esc(provider.name)}`;
+    button.disabled = !available;
+    button.title = available ? 'Click to hide or show' : 'No data for this price measure';
+    button.setAttribute('aria-pressed', String(available && !hidden.has(provider.name)));
+    button.addEventListener('mouseenter', () => focusProvider(provider.name));
+    button.addEventListener('mouseleave', () => focusProvider(null));
+    button.addEventListener('click', () => {
+      if (hidden.has(provider.name)) {
+        hidden.delete(provider.name);
+      } else {
+        hidden.add(provider.name);
+      }
+
+      render();
+    });
+    legend.appendChild(button);
+  }
+};
+
+const renderTable = (basis, rows) => {
+  const ranked = rankAt(rows, weights);
+  const averages = averageRanks(basis, rows);
   const missing = providers.filter((p) => !rows.some((row) => row.p === p));
-  const pct = (value) => Math.round(value * 100) + '%';
   const priceLabel = basis === 'list' ? 'Blended $/1M' : 'Cost / task';
   const segment = (value, color) => (value > 0.05 ? `<i style="width:${value}%;background:var(${color})"></i>` : '');
-
-  document.getElementById('r-price').textContent = pct((1 - s) * (1 - w));
-  document.getElementById('r-intel').textContent = pct((1 - s) * w);
-  document.getElementById('r-speed').textContent = pct(s);
-
   const head = ['Rank', 'Provider', 'Model', 'Score breakdown', 'Score', priceLabel, 'Price score', 'Intelligence score', 'Speed score', 'Avg rank'];
   const numeric = [true, false, false, false, true, true, true, true, true, true];
   const cell = (value, i) => `<td${numeric[i] ? ' class="num"' : ''}>${value}</td>`;
-  const body = ranked.map((row, position) => '<tr>' + [
+  const named = (provider) => `<span style="display:inline-flex;align-items:center;gap:6px">${swatch(provider)}${providerLink(provider.name)}</span>`;
+  const body = ranked.map((row, position) => `<tr data-provider="${esc(row.p.name)}">` + [
     position + 1,
-    providerLink(row.p.name),
+    named(row.p),
     modelLink(row.p.name, row.p.model),
-    `<div class="stack">${segment(row.cPrice, '--c-price')}${segment(row.cIntel, '--c-intel')}${segment(row.cSpeed, '--c-speed')}</div>`,
+    `<div class="stack">${row.parts.map((part, i) => segment(part, TRAIT_COLORS[i])).join('')}</div>`,
     row.score.toFixed(1),
     '$' + row.price.toFixed(2),
-    Math.round(row.sPrice),
-    Math.round(row.sIntel),
-    Math.round(row.sSpeed) + (row.speedEst ? '*' : ''),
+    Math.round(row.scores[0]),
+    Math.round(row.scores[1]),
+    Math.round(row.scores[2]) + (row.speedEst ? '*' : ''),
     averages.get(row.p.name).toFixed(1),
   ].map(cell).join('') + '</tr>').join('');
   const tail = missing.map((p) => '<tr class="nodata">' + [
-    '—', providerLink(p.name), modelLink(p.name, p.model), 'No data for this price measure', '—', '—', '—', '—', '—', '—',
+    '—', named(p), modelLink(p.name, p.model), 'No data for this price measure', '—', '—', '—', '—', '—', '—',
   ].map(cell).join('') + '</tr>').join('');
+  const target = document.getElementById('t-rank');
 
-  document.getElementById('t-rank').innerHTML = '<thead><tr>'
+  target.innerHTML = '<thead><tr>'
     + head.map((label, i) => `<th${numeric[i] ? ' class="num"' : ''}>${label}</th>`).join('')
     + '</tr></thead><tbody>' + body + tail + '</tbody>';
+
+  for (const row of target.querySelectorAll('tr[data-provider]')) {
+    row.addEventListener('mouseenter', () => focusProvider(row.getAttribute('data-provider')));
+    row.addEventListener('mouseleave', () => focusProvider(null));
+  }
 };
 
-for (const id of ['w-intel', 'w-speed', 'basis']) {
-  document.getElementById(id).addEventListener('input', renderRanking);
+const render = () => {
+  const basis = document.getElementById('basis').value;
+  const rows = traitScores(basis);
+
+  control.draw();
+  renderRadar(rows);
+  renderLegend(rows);
+  renderTable(basis, rows);
+};
+
+function setWeights(next) {
+  weights = normalise(next);
+  render();
 }
 
-renderRanking();
+document.getElementById('basis').addEventListener('input', render);
+
+for (const button of document.querySelectorAll('#presets button')) {
+  button.addEventListener('click', () => {
+    setWeights(button.getAttribute('data-weights').split(',').map(Number));
+  });
+}
+
+render();
 </script>
 </body>
 </html>
